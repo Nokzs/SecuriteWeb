@@ -20,32 +20,34 @@ public class SecurityConfig {
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable()) // Désactivé pour faciliter les tests API (Postman)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register/**").permitAll() // Inscription libre
-                .anyRequest().authenticated()
-            )
-            .formLogin(form -> form.usernameParameter("email")
-                .loginProcessingUrl("/api/auth/login")
-                .successHandler((request, response, authentication) -> {
-                    response.setStatus(200);
-                    response.setContentType("application/json;charset=UTF-8");
-                    response.getWriter().write("{\"status\": \"SUCCESS\", \"message\": \"Connecté\"}");
-                })
-                .failureHandler((request, response, exception) -> {
-                    response.setStatus(401);
-                    response.setContentType("application/json;charset=UTF-8");
-                    response.getWriter().write("{\"status\": \"ERROR\", \"message\": \"Identifiants incorrects\"}");
-                })
-                )            .logout(logout -> logout
-                .logoutUrl("/api/auth/logout")
-                .logoutSuccessHandler((request, response, authentication) -> response.setStatus(200))
-            );
+                http
+                                .csrf(csrf -> csrf.disable()) // Désactivé pour faciliter les tests API (Postman)
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/api/auth/register/**").permitAll() // Inscription
+                                                                                                      // libre
+                                                .anyRequest().authenticated())
+                                .formLogin(form -> form.usernameParameter("email")
+                                                .loginProcessingUrl("/api/auth/login")
+                                                .successHandler((request, response, authentication) -> {
+                                                        response.setStatus(200);
+                                                        response.setContentType("application/json;charset=UTF-8");
+                                                        response.getWriter().write(
+                                                                        "{\"status\": \"SUCCESS\", \"message\": \"Connecté\"}");
+                                                })
+                                                .failureHandler((request, response, exception) -> {
+                                                        response.setStatus(401);
+                                                        response.setContentType("application/json;charset=UTF-8");
+                                                        response.getWriter().write(
+                                                                        "{\"status\": \"ERROR\", \"message\": \"Identifiants incorrects\"}");
+                                                }))
+                                .logout(logout -> logout
+                                                .logoutUrl("/api/auth/logout")
+                                                .logoutSuccessHandler((request, response, authentication) -> response
+                                                                .setStatus(200)));
 
-        return http.build();
-    }
+                return http.build();
+        }
 
         @Bean
         public DaoAuthenticationProvider authenticationProvider() {
@@ -60,14 +62,15 @@ public class SecurityConfig {
         public PasswordEncoder passwordEncoder() {
                 return new BCryptPasswordEncoder();
         }
+
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
-                configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); 
+                configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
                 configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
                 configuration.setAllowCredentials(true);
                 configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-    
+
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
                 source.registerCorsConfiguration("/**", configuration);
                 return source;

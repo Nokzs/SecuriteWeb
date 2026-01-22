@@ -1,20 +1,23 @@
 services:
   mysql-db:
     image: mysql:8.0
-    container_name: mysql-container
+    container_name: mysql-local
+    restart: always
     environment:
       MYSQL_DATABASE: nom_de_ta_base
       MYSQL_ROOT_PASSWORD: root
     ports:
       - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  app-server:
-    build: .
-    container_name: spring-app
+  backend:
+    build:
+      context: ./back/securiteWebBack/
+    container_name: spring-api
     ports:
       - "8080:8080"
     depends_on:
@@ -25,3 +28,12 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+  frontend:
+    build:
+      context: ./front/securiteWebFront/ # Chemin vers le dossier contenant le Dockerfile du front
+    container_name: vite-front
+    ports:
+      - "3000:80" # Accessible sur http://localhost:3000
+    depends_on:
+      - backend
