@@ -7,10 +7,10 @@ public record CreateProprietaireDto(String email, String password, String nom, S
         implements CreateUserDTO {
 
     public Proprietaire toEntity() {
-        return new Proprietaire(email, password, Role.PROPRIETAIRE.toString(), nom, prenom);
+        return new Proprietaire(email, password, nom, prenom, telephone);
     }
 
-    public Role role() {
-        return Role.PROPRIETAIRE;
+    public String role() {
+        return Role.PROPRIETAIRE.name();
     }
 }

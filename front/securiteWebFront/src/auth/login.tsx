@@ -1,19 +1,22 @@
-import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-
+import { useMutation } from "@tanstack/react-query";
+import { useSecureFetch } from "../hooks/secureFetch";
+import { NavLink, useNavigate } from "react-router";
+import { userStore, type UserStoreType } from "../store/userStore";
+const API_URL = import.meta.env.VITE_APIURL;
 const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, { message: "L'email est requis" })
-    .email({ message: "Format d'email invalide" }),
+  email: z.string().min(1, { message: "L'email est requis" }),
   password: z
     .string()
     .min(6, { message: "Le mot de passe doit contenir au moins 6 caractères" }),
 });
 type LoginFormValues = z.infer<typeof loginSchema>;
 export const Login = () => {
+  const setUser = userStore((s: UserStoreType) => s.setUser);
+
+  const secureFetch = useSecureFetch();
   const {
     register,
     handleSubmit,
@@ -26,68 +29,135 @@ export const Login = () => {
       password: "",
     },
   });
-
+  const { mutateAsync } = useMutation({
+    mutationFn: async (data: LoginFormValues) => {
+      const response = await secureFetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      if (response.ok) {
+        return response.json();
+      }
+    },
+  });
+  const navigate = useNavigate();
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      console.log("Données envoyées :", data);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const user = await mutateAsync(data);
+      setUser(user);
+      navigate(`${user.role}/dashboard`);
     } catch (error) {
       console.error("Erreur de connexion", error);
     }
   };
 
   return (
-    <div className="flex justify-center items-center h-screen">
-      <fieldset className="fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4">
-        <legend className="fieldset-legend">Login</legend>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Champ Email */}
-          <div style={{ marginBottom: "1rem" }}>
-            <label htmlFor="email" className="label">
+    <div className="flex justify-center items-center h-screen bg-slate-50">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-8 animate-in fade-in zoom-in-95 duration-300">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-bold text-slate-800">Bienvenue</h1>
+          <p className="text-slate-500 mt-2">
+            Veuillez vous connecter à votre compte
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
               Email
             </label>
             <input
               id="email"
               type="email"
               {...register("email")}
-              className="input"
-              placeholder="Email"
+              className={`w-full border p-3 rounded-xl outline-none transition-all ${
+                errors.email
+                  ? "border-red-400 focus:ring-2 focus:ring-red-100"
+                  : "border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              }`}
+              placeholder="nom@exemple.com"
             />
             {errors.email && (
-              <p style={{ color: "red", fontSize: "0.8rem" }}>
-                {errors.email.message}
+              <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                <span>⚠</span> {errors.email.message}
               </p>
             )}
           </div>
 
           {/* Champ Mot de passe */}
-          <div style={{ marginBottom: "1rem" }}>
-            <label htmlFor="password" className="label">
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-slate-700 mb-1"
+            >
               Mot de passe
             </label>
             <input
-              placeholder="password"
               id="password"
               type="password"
-              className="input"
               {...register("password")}
+              className={`w-full border p-3 rounded-xl outline-none transition-all ${
+                errors.password
+                  ? "border-red-400 focus:ring-2 focus:ring-red-100"
+                  : "border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              }`}
+              placeholder="••••••••"
             />
             {errors.password && (
-              <p style={{ color: "red", fontSize: "0.8rem" }}>
-                {errors.password.message}
+              <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                <span>⚠</span> {errors.password.message}
               </p>
             )}
           </div>
 
           <button
             type="submit"
-            className="btn btn-neutral mt-4"
             disabled={isSubmitting}
+            className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
           >
-            {isSubmitting ? "Connexion en cours..." : "Se connecter"}
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Connexion...
+              </span>
+            ) : (
+              "Se connecter"
+            )}
           </button>
+
+          {/* Lien optionnel */}
+          <p className="text-center text-sm text-slate-500 mt-6">
+            Pas encore de compte ?{" "}
+            <NavLink
+              to="/register"
+              className="text-indigo-600 font-semibold hover:underline"
+            >
+              S'inscrire
+            </NavLink>
+          </p>
         </form>
-      </fieldset>
+      </div>
     </div>
   );
 };

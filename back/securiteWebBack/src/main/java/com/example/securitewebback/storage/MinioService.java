@@ -1,3 +1,4 @@
+package com.example.securitewebback.storage;
 
 import io.minio.*;
 import io.minio.http.Method;
@@ -28,12 +29,10 @@ public class MinioService {
     public void initializeBucket() {
         try {
             boolean found = minioClient.bucketExists(
-                BucketExistsArgs.builder().bucket(bucketName).build()
-            );
+                    BucketExistsArgs.builder().bucket(bucketName).build());
             if (!found) {
                 minioClient.makeBucket(
-                    MakeBucketArgs.builder().bucket(bucketName).build()
-                );
+                        MakeBucketArgs.builder().bucket(bucketName).build());
                 log.info("Bucket '{}' créé avec succès.", bucketName);
             }
         } catch (Exception e) {
@@ -43,19 +42,19 @@ public class MinioService {
 
     /**
      * Upload un fichier (ex: facture, contrat de syndic)
+     * 
      * @param pathName Le nom/chemin souhaité dans MinIO
-     * @param file Le fichier venant du Frontend
+     * @param file     Le fichier venant du Frontend
      */
     public void upload(String pathName, MultipartFile file) {
         try {
             minioClient.putObject(
-                PutObjectArgs.builder()
-                    .bucket(bucketName)
-                    .object(pathName)
-                    .stream(file.getInputStream(), file.getSize(), -1)
-                    .contentType(file.getContentType())
-                    .build()
-            );
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(pathName)
+                            .stream(file.getInputStream(), file.getSize(), -1)
+                            .contentType(file.getContentType())
+                            .build());
             log.info("Fichier '{}' uploadé avec succès.", pathName);
         } catch (Exception e) {
             throw new RuntimeException("Erreur lors de l'upload : " + e.getMessage());
@@ -64,19 +63,18 @@ public class MinioService {
 
     /**
      * Génère une URL temporaire sécurisée (idéal pour SSO)
-     * L'utilisateur n'a pas besoin d'être authentifié sur MinIO, 
+     * L'utilisateur n'a pas besoin d'être authentifié sur MinIO,
      * seulement sur ton Back.
      */
     public String generatePresignedUrl(String objectName) {
         try {
             return minioClient.getPresignedObjectUrl(
-                GetPresignedObjectUrlArgs.builder()
-                    .method(Method.GET)
-                    .bucket(bucketName)
-                    .object(objectName)
-                    .expiry(10, TimeUnit.MINUTES) // URL valide 10 min
-                    .build()
-            );
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
+                            .bucket(bucketName)
+                            .object(objectName)
+                            .expiry(10, TimeUnit.MINUTES) // URL valide 10 min
+                            .build());
         } catch (Exception e) {
             throw new RuntimeException("Impossible de générer l'URL : " + e.getMessage());
         }
@@ -88,11 +86,10 @@ public class MinioService {
     public InputStream download(String objectName) {
         try {
             return minioClient.getObject(
-                GetObjectArgs.builder()
-                    .bucket(bucketName)
-                    .object(objectName)
-                    .build()
-            );
+                    GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectName)
+                            .build());
         } catch (Exception e) {
             throw new RuntimeException("Erreur lors du téléchargement : " + e.getMessage());
         }
@@ -104,11 +101,10 @@ public class MinioService {
     public void remove(String objectName) {
         try {
             minioClient.removeObject(
-                RemoveObjectArgs.builder()
-                    .bucket(bucketName)
-                    .object(objectName)
-                    .build()
-            );
+                    RemoveObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectName)
+                            .build());
         } catch (Exception e) {
             throw new RuntimeException("Erreur lors de la suppression : " + e.getMessage());
         }

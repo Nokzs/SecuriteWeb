@@ -7,8 +7,8 @@ import com.example.securitewebback.auth.entity.User;
 public record CreateSyndicDto(String email, String password, String nomAgence, String adresse, String telephone)
         implements CreateUserDTO {
     @Override
-    public Role role() {
-        return Role.SYNDIC;
+    public String role() {
+        return Role.SYNDIC.name();
     }
 
     @Override

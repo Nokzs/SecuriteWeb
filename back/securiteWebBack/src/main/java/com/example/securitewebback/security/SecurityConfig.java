@@ -15,75 +15,106 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-        private final ConcreteUserDetailsService myUserDetailsService;
+                                private final ConcreteUserDetailsService myUserDetailsService;
+                                private final FormLoginSuccesHandler loginSuccessHandler;
 
-        public SecurityConfig(ConcreteUserDetailsService myUserDetailsService) {
-                this.myUserDetailsService = myUserDetailsService;
-        }
+                                public SecurityConfig(ConcreteUserDetailsService myUserDetailsService,
+                                                                                                FormLoginSuccesHandler loginSuccessHandler) {
+                                                                this.myUserDetailsService = myUserDetailsService;
+                                                                this.loginSuccessHandler = loginSuccessHandler;
+                                }
 
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                http
-                                .csrf(csrf -> csrf.disable())
-                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                                .exceptionHandling(ex -> ex
-                                                .authenticationEntryPoint(
-                                                                (AuthenticationEntryPoint) new HttpStatusEntryPoint(
-                                                                                HttpStatus.UNAUTHORIZED)))
-                                .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                                .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/api/auth/register/**", "/api/auth/login").permitAll()
-                                                .anyRequest().authenticated())
-                                .formLogin(form -> form
-                                                .usernameParameter("email")
-                                                .loginProcessingUrl("/api/auth/login")
-                                                .successHandler((req, res, auth) -> {
-                                                        res.setStatus(200);
-                                                        res.getWriter().write("{\"status\": \"SUCCESS\"}");
-                                                })
-                                                .failureHandler((req, res, exp) -> {
-                                                        res.setStatus(401);
-                                                        res.getWriter().write("{\"status\": \"ERROR\"}");
-                                                }))
-                                .logout(logout -> logout
-                                                .logoutUrl("/api/auth/logout")
-                                                .logoutSuccessHandler((req, res, auth) -> res.setStatus(200)));
+                                @Bean
+                                public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                                                                http
+                                                                                                                                .cors(cors -> cors.configurationSource(
+                                                                                                                                                                                                corsConfigurationSource()))
+                                                                                                                                .csrf(csrf -> csrf
+                                                                                                                                                                                                .csrfTokenRepository(CookieCsrfTokenRepository
+                                                                                                                                                                                                                                                                .withHttpOnlyFalse())
+                                                                                                                                                                                                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+                                                                                                                                .addFilterAfter(new CsrfCookieFilter(),
+                                                                                                                                                                                                BasicAuthenticationFilter.class)
+                                                                                                                                .exceptionHandling(ex -> ex
+                                                                                                                                                                                                .authenticationEntryPoint(
+                                                                                                                                                                                                                                                                (AuthenticationEntryPoint) new HttpStatusEntryPoint(
+                                                                                                                                                                                                                                                                                                                                HttpStatus.UNAUTHORIZED)))
+                                                                                                                                .sessionManagement(session -> session
+                                                                                                                                                                                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                                                                                                                                .authorizeHttpRequests(auth -> auth
+                                                                                                                                                                                                .requestMatchers("/api/auth/**")
+                                                                                                                                                                                                .permitAll()
+                                                                                                                                                                                                .anyRequest()
+                                                                                                                                                                                                .authenticated())
+                                                                                                                                .formLogin(form -> form
+                                                                                                                                                                                                .usernameParameter("email")
+                                                                                                                                                                                                .loginProcessingUrl("/api/auth/login")
+                                                                                                                                                                                                .successHandler(this.loginSuccessHandler)
+                                                                                                                                                                                                .failureHandler((req, res, exp) -> {
+                                                                                                                                                                                                                                res.setStatus(401);
+                                                                                                                                                                                                                                res.getWriter().write("{\"status\": \"ERROR\"}");
+                                                                                                                                                                                                }))
+                                                                                                                                .logout(logout -> logout
+                                                                                                                                                                                                .logoutUrl("/api/auth/logout")
+                                                                                                                                                                                                .addLogoutHandler((request, response,
+                                                                                                                                                                                                                                                                authentication) -> {
+                                                                                                                                                                                                })
+                                                                                                                                                                                                .logoutSuccessHandler((request, response,
+                                                                                                                                                                                                                                                                authentication) -> {
+                                                                                                                                                                                                                                response.setStatus(HttpServletResponse.SC_OK);
+                                                                                                                                                                                                })
+                                                                                                                                                                                                .invalidateHttpSession(true)
+                                                                                                                                                                                                .deleteCookies("JSESSIONID", "XSRF-TOKEN")
+                                                                                                                                                                                                .clearAuthentication(true));
+                                                                return http.build();
+                                }
 
-                return http.build();
-        }
+                                @Bean
+                                public DaoAuthenticationProvider authenticationProvider() {
+                                                                DaoAuthenticationProvider authProvider;
+                                                                authProvider = new DaoAuthenticationProvider(myUserDetailsService);
+                                                                authProvider.setPasswordEncoder(passwordEncoder()); // On
+                                                                                                                    // lie
+                                                                                                                    // ton
+                                                                                                                    // encodeur
+                                                                                                                    // (BCrypt)
 
-        @Bean
-        public DaoAuthenticationProvider authenticationProvider() {
-                DaoAuthenticationProvider authProvider;
-                authProvider = new DaoAuthenticationProvider(myUserDetailsService);
-                authProvider.setPasswordEncoder(passwordEncoder()); // On lie ton encodeur (BCrypt)
+                                                                return authProvider;
+                                }
 
-                return authProvider;
-        }
+                                @Bean
+                                public PasswordEncoder passwordEncoder() {
+                                                                return new BCryptPasswordEncoder();
+                                }
 
-        @Bean
-        public PasswordEncoder passwordEncoder() {
-                return new BCryptPasswordEncoder();
-        }
+                                @Bean
+                                public CorsConfigurationSource corsConfigurationSource() {
+                                                                CorsConfiguration configuration = new CorsConfiguration();
+                                                                configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+                                                                configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT",
+                                                                                                                                "DELETE"));
+                                                                configuration.setAllowCredentials(true);
+                                                                configuration.setAllowedHeaders(Arrays.asList(
+                                                                                                                                                                "Authorization", 
+                                                                                                                                                                "Content-Type", 
+                                                                                                                                                                "X-XSRF-TOKEN", // <--- Ajoute ceci
+                                                                                                                                                                "Accept"
+                                                                                                             ));
 
-        @Bean
-        public CorsConfigurationSource corsConfigurationSource() {
-                CorsConfiguration configuration = new CorsConfiguration();
-                configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
-                configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-                configuration.setAllowCredentials(true);
-                configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-
-                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-                source.registerCorsConfiguration("/**", configuration);
-                return source;
-        }
+                                                                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                                                                source.registerCorsConfiguration("/**", configuration);
+                                                                return source;
+                                }
 }

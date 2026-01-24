@@ -1,9 +1,21 @@
 package com.example.securitewebback.auth.controller;
 
+import java.io.IOException;
+import java.security.Principal;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,8 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.securitewebback.auth.dto.CreateUserDTO;
 import com.example.securitewebback.auth.entity.User;
 import com.example.securitewebback.auth.service.RegistrationService;
+import com.example.securitewebback.security.CustomUserDetails;
 
-import jakarta.persistence.EntityExistsException;
+import com.example.securitewebback.security.FormLoginSuccesHandler;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 @RestController
@@ -21,21 +38,53 @@ import jakarta.validation.Valid;
 public class RegistrationController {
 
     private final RegistrationService registrationService;
+    private final FormLoginSuccesHandler successHandler;
+    // On utilise l'implémentation standard pour les API basées sur les sessions
+    private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
-    public RegistrationController(RegistrationService registrationService) {
+    public RegistrationController(RegistrationService registrationService, FormLoginSuccesHandler successHandler) {
         this.registrationService = registrationService;
+        this.successHandler = successHandler;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody @Valid CreateUserDTO request) {
+    public void register(@Valid @RequestBody CreateUserDTO dto,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+        // 1. Création de l'utilisateur en base de données
+        User user = registrationService.registerUser(dto);
+
+        CustomUserDetails userDetails = new CustomUserDetails(user);
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities());
+
+        // 3. Création d'un nouveau contexte de sécurité
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(auth);
+
+        // 4. IMPORTANT : On informe le SecurityContextHolder
+        SecurityContextHolder.setContext(context);
+
+        // 5. CRUCIAL : Sauvegarde explicite dans la session (via le repository)
+        // Sans cette ligne, la session est oubliée à la fin de la requête
+        securityContextRepository.saveContext(context, request, response);
+
+        // 6. Déclenchement du succès (envoi de la réponse JSON / Cookie CSRF)
         try {
-            User newUser = registrationService.registerUser(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "message", "Utilisateur créé avec succès",
-                    "userUuid", newUser.getId()));
-        } catch (EntityExistsException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                    "error", "Cet email est déjà utilisé"));
+            successHandler.onAuthenticationSuccess(request, response, auth);
+        } catch (IOException | ServletException e) {
+            throw new RuntimeException("Erreur lors de la finalisation de l'inscription", e);
         }
     }
+
+    @GetMapping("/csrf")
+    public void initCsrf() {
+    }
+    @GetMapping("user")
+    public void getProfil(Principal principal){
+
+    } 
 }

@@ -5,6 +5,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.securitewebback.auth.dto.CreateUserDTO;
+import com.example.securitewebback.auth.entity.Role;
 import com.example.securitewebback.auth.entity.User;
 import com.example.securitewebback.user.repository.UserRepository;
 
@@ -19,14 +20,15 @@ public class RegistrationService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public User registerUser(CreateUserDTO user) {
-        Optional<User> findUser = userRepository.findByEmail(user.email());
-        if (findUser.isPresent()) {
+    public User registerUser(CreateUserDTO dto) {
+        if (userRepository.findByEmail(dto.email()).isPresent()) {
             throw new IllegalArgumentException("Email already in use");
         }
-        User newUser = user.toEntity();
-        newUser.setPassword(passwordEncoder.encode(user.password()));
+
+        User newUser = dto.toEntity();
+        String encodedPassword = passwordEncoder.encode(newUser.getPassword());
+        newUser.setPassword(encodedPassword);
+
         return userRepository.save(newUser);
     }
-
 }
