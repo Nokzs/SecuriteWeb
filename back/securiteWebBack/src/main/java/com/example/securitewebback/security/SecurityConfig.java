@@ -1,14 +1,20 @@
+package com.example.securitewebback.security;
+
 import java.util.Arrays;
 
 import org.springframework.context.annotation.Bean;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -18,33 +24,38 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
         private final ConcreteUserDetailsService myUserDetailsService;
 
+        public SecurityConfig(ConcreteUserDetailsService myUserDetailsService) {
+                this.myUserDetailsService = myUserDetailsService;
+        }
+
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
-                                .csrf(csrf -> csrf.disable()) // Désactivé pour faciliter les tests API (Postman)
+                                .csrf(csrf -> csrf.disable())
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                                .exceptionHandling(ex -> ex
+                                                .authenticationEntryPoint(
+                                                                (AuthenticationEntryPoint) new HttpStatusEntryPoint(
+                                                                                HttpStatus.UNAUTHORIZED)))
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/api/auth/register/**").permitAll() // Inscription
-                                                                                                      // libre
+                                                .requestMatchers("/api/auth/register/**", "/api/auth/login").permitAll()
                                                 .anyRequest().authenticated())
-                                .formLogin(form -> form.usernameParameter("email")
+                                .formLogin(form -> form
+                                                .usernameParameter("email")
                                                 .loginProcessingUrl("/api/auth/login")
-                                                .successHandler((request, response, authentication) -> {
-                                                        response.setStatus(200);
-                                                        response.setContentType("application/json;charset=UTF-8");
-                                                        response.getWriter().write(
-                                                                        "{\"status\": \"SUCCESS\", \"message\": \"Connecté\"}");
+                                                .successHandler((req, res, auth) -> {
+                                                        res.setStatus(200);
+                                                        res.getWriter().write("{\"status\": \"SUCCESS\"}");
                                                 })
-                                                .failureHandler((request, response, exception) -> {
-                                                        response.setStatus(401);
-                                                        response.setContentType("application/json;charset=UTF-8");
-                                                        response.getWriter().write(
-                                                                        "{\"status\": \"ERROR\", \"message\": \"Identifiants incorrects\"}");
+                                                .failureHandler((req, res, exp) -> {
+                                                        res.setStatus(401);
+                                                        res.getWriter().write("{\"status\": \"ERROR\"}");
                                                 }))
                                 .logout(logout -> logout
                                                 .logoutUrl("/api/auth/logout")
-                                                .logoutSuccessHandler((request, response, authentication) -> response
-                                                                .setStatus(200)));
+                                                .logoutSuccessHandler((req, res, auth) -> res.setStatus(200)));
 
                 return http.build();
         }
@@ -66,7 +77,7 @@ public class SecurityConfig {
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
-                configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+                configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
                 configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
                 configuration.setAllowCredentials(true);
                 configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));

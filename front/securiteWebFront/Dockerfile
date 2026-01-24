@@ -4,7 +4,6 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-# Vite va injecter les variables de .env.production ici
 RUN npm run build 
 
 # Étape 2 : Serveur de production
