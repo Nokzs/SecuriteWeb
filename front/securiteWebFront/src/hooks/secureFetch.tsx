@@ -21,7 +21,7 @@ export const useSecureFetch = () => {
 
       // 2. Récupération du token CSRF
       const csrfToken = Cookies.get("XSRF-TOKEN");
-
+      console.log("CSRF Token récupéré :", csrfToken);
       // 3. Ajout du header CSRF pour les méthodes de mutation
       const method = options.method?.toUpperCase() || "GET";
       const isMutation = ["POST", "PUT", "DELETE", "PATCH"].includes(method);

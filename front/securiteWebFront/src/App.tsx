@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from "react-router";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
 import { Login } from "./auth/login";
 import { useEffect } from "react";
 import { Register } from "./auth/register";
@@ -62,7 +62,7 @@ const routes = [
                 children: [
                   {
                     index: true,
-                    element: <div>Liste des immeubles syndic</div>,
+                    element: <Navigate to="building" replace />, // Par défaut on va sur les apparts
                   },
                   {
                     path: "building",
@@ -83,11 +83,12 @@ const routes = [
 ];
 function App() {
   useEffect(() => {
-    fetch(`${import.meta.env.vite_apiurl}/auth/csrf`, {
-      headers: {
-        credentials: "include",
-      },
-    });
+    fetch(`${import.meta.env.VITE_APIURL}/auth/csrf`, {
+      credentials: "include",
+      method: "GET",
+    })
+      .then(() => console.log("Handshake CSRF réussi"))
+      .catch((err) => console.error("Échec handshake", err));
   }, []);
   const router = createBrowserRouter(routes);
   const queryClient = new QueryClient();

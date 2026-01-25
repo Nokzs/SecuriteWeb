@@ -17,7 +17,7 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedFile(file);
-      setPreview(URL.createObjectURL(file)); // Crée un lien temporaire pour l'aperçu
+      setPreview(URL.createObjectURL(file));
     }
   };
   const [newBuilding, setNewBuilding] = useState({ name: "", address: "" });
@@ -26,7 +26,7 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
   const secureFetch = useSecureFetch();
   const addBuilding = useMutation({
     mutationFn: async (formData: Omit<Building, "id" | "syndicId">) => {
-      const response = await secureFetch(`${API_URL}/buildings`, {
+      const response = await secureFetch(`${API_URL}/building`, {
         body: JSON.stringify(formData),
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,7 +60,7 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
         onClick={() => setShowAddForm(false)}
       />
 
-      <div className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 p-8 animate-in zoom-in-95 duration-200">
+      <div className="relative bg-white  w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 p-8 animate-in zoom-in-95 duration-200">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-slate-800">
             Ajouter un bâtiment
@@ -77,7 +77,7 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
               Nom
             </label>
             <input
-              className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              className="w-full border border-slate-300 text-black p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               placeholder="ex: Résidence Jupiter"
               value={newBuilding.name}
               onChange={(e) =>
@@ -93,7 +93,7 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
               Adresse
             </label>
             <input
-              className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              className="w-full border border-slate-300 text-black p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               placeholder="123 rue de la Paix, Paris"
               value={newBuilding.address}
               onChange={(e) =>

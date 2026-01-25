@@ -23,7 +23,7 @@ import com.example.securitewebback.security.CustomUserDetails;
 import com.example.securitewebback.storage.MinioService;
 
 @RestController()
-@RequestMapping("/api/buildings")
+@RequestMapping("/api/building")
 public class BuildingController {
     private final BuildingService buildingService;
     private final MinioService minioService;

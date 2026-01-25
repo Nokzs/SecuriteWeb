@@ -6,11 +6,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.example.securitewebback.auth.entity.Syndic;
 import com.example.securitewebback.building.dto.BuildingDto;
 import com.example.securitewebback.building.dto.CreateBuildingDto;
 import com.example.securitewebback.building.entity.Building;
 import com.example.securitewebback.building.repository.BuildingRepository;
 import com.example.securitewebback.storage.MinioService;
+import com.example.securitewebback.user.repository.SyndicRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,6 +22,7 @@ public class BuildingService {
 
     private final BuildingRepository buildingRepository;
     private final MinioService minioService;
+    private SyndicRepository syndicRepository;
 
     public BuildingService(BuildingRepository buildingRepository, MinioService MinioService) {
         this.minioService = MinioService;
@@ -46,7 +49,10 @@ public class BuildingService {
     public Building createBuilding(CreateBuildingDto createBuildingDto, UUID syndicId) {
 
         Building building = createBuildingDto.ToEntity();
-        building.setId(syndicId);
+        Syndic syndic = syndicRepository.findById(syndicId)
+                .orElseThrow(() -> new RuntimeException("Syndic non trouvé"));
+
+        building.setSyndic(syndic);
         Building savedBuilding = buildingRepository.save(building);
         return savedBuilding;
     }

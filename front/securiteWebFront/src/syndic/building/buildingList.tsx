@@ -5,6 +5,7 @@ import { userStore } from "../../store/userStore";
 import { useSecureFetch } from "../../hooks/secureFetch";
 import { useQuery } from "@tanstack/react-query";
 import { AddBuildingPopUp } from "../component/addBuildingPopUp";
+import type { Page } from "../../types/pagination";
 export interface Building {
   id: string;
   name: string;
@@ -18,20 +19,20 @@ export const BuildingsList = () => {
   const secureFetch = useSecureFetch();
   const user = userStore((s) => s.user);
   const navigate = useNavigate();
-  const { data, isLoading } = useQuery<Building[]>({
+  const { data, isLoading } = useQuery<Page<Building>>({
     queryKey: ["buildings", user?.uuid],
     queryFn: async () => {
-      const res = await secureFetch(`${API_URL}/buildings`);
+      const res = await secureFetch(`${API_URL}/building`);
 
       if (!res.ok) {
         throw new Error("Erreur lors de la récupération des bâtiments");
       }
 
-      return (await res.json()) as Building[];
+      return (await res.json()) as Page<Building>;
     },
     enabled: !!user?.uuid,
   });
-
+  console.log("Buildings data:", data);
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex justify-between items-center mb-8">
@@ -55,7 +56,7 @@ export const BuildingsList = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {data &&
           !isLoading &&
-          data?.map((building: Building) => (
+          data?.content.map((building: Building) => (
             <div
               key={building.id}
               onClick={() =>
@@ -80,7 +81,7 @@ export const BuildingsList = () => {
             </div>
           ))}
       </div>
-      {data && data.length === 0 && !showAddForm && (
+      {data && data.content.length === 0 && !showAddForm && (
         <div className="text-center py-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
           <Building2 className="mx-auto text-slate-300 mb-4" size={48} />
           <p className="text-slate-500">
