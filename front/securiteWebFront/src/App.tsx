@@ -33,10 +33,10 @@ const routes = [
   },
   {
     id: "auth",
-    element: <AuthRoute />,
+    //element: <AuthRoute />,
     children: [
       {
-        element: <RoleRoute allowedRoles={["SYNDIC"]} redirectPath="/owner" />,
+        // element: <RoleRoute allowedRoles={["SYNDIC"]} redirectPath="/owner" />,
         children: [
           {
             path: "syndic",

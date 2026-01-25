@@ -1,11 +1,9 @@
 package com.example.securitewebback.auth.service;
 
-import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.securitewebback.auth.dto.CreateUserDTO;
-import com.example.securitewebback.auth.entity.Role;
 import com.example.securitewebback.auth.entity.User;
 import com.example.securitewebback.user.repository.UserRepository;
 

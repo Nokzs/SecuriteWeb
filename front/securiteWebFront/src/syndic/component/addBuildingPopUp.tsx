@@ -10,6 +10,16 @@ type addBuildingPopUpProps = {
 
 const API_URL = import.meta.env.VITE_APIURL;
 export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      setPreview(URL.createObjectURL(file)); // Crée un lien temporaire pour l'aperçu
+    }
+  };
   const [newBuilding, setNewBuilding] = useState({ name: "", address: "" });
   const user = userStore((s) => s.user);
   const queryClient = useQueryClient();
@@ -54,17 +64,18 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
             Ajouter un bâtiment
           </h2>
           <p className="text-sm text-slate-500">
-            Remplissez les informations pour créer un nouvel immeuble.
+            Remplissez les informations et ajoutez une photo.
           </p>
         </div>
 
         <form onSubmit={handleAddBuilding} className="space-y-4">
+          {/* Champ Nom */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Nom
             </label>
             <input
-              className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+              className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               placeholder="ex: Résidence Jupiter"
               value={newBuilding.name}
               onChange={(e) =>
@@ -74,12 +85,13 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
             />
           </div>
 
+          {/* Champ Adresse */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Adresse
             </label>
             <input
-              className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+              className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               placeholder="123 rue de la Paix, Paris"
               value={newBuilding.address}
               onChange={(e) =>
@@ -88,6 +100,59 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
               required
             />
           </div>
+
+          {/* --- NOUVEAU : Zone Photo --- */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Photo de l'immeuble
+            </label>
+            <div className="relative group border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-indigo-400 transition-colors bg-slate-50">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+
+              <div className="flex flex-col items-center justify-center space-y-2">
+                {preview ? (
+                  <div className="relative w-full h-32">
+                    <img
+                      src={preview}
+                      alt="Preview"
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg text-white text-xs">
+                      Changer la photo
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="p-3 bg-white rounded-full shadow-sm text-slate-400 group-hover:text-indigo-500 transition-colors">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Cliquez ou glissez une image ici
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          {/* ----------------------------- */}
 
           <div className="flex gap-3 pt-4">
             <button
@@ -102,7 +167,7 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
               disabled={addBuilding.isPending}
               className="flex-1 bg-indigo-600 text-white font-medium py-3 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all disabled:opacity-50"
             >
-              {addBuilding.isPending ? "Enregistrement..." : "Créer l'immeuble"}
+              {addBuilding.isPending ? "Envoi..." : "Créer l'immeuble"}
             </button>
           </div>
         </form>
