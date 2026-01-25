@@ -9,7 +9,8 @@ export interface Building {
   id: string;
   name: string;
   address: string;
-  apartmentCount: number;
+  syndicId: string;
+  photoFilename: string | null;
 }
 const API_URL = import.meta.env.VITE_APIURL;
 export const BuildingsList = () => {

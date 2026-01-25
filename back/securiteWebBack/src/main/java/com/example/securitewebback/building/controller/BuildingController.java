@@ -53,21 +53,18 @@ public class BuildingController {
 
         UUID syndicId = ((CustomUserDetails) auth.getPrincipal()).getUuid();
         Building createdBuilding = buildingService.createBuilding(createBuildingDto, syndicId);
+        String signedLink = null;
         if (createBuildingDto.filename() != null) {
             String objectName = createdBuilding.getId().toString() + "/"
                     + createdBuilding.getPhotoFilename();
             try {
-                String signedLink = this.minioService.generatePresignedUrl(objectName);
-
-                BuildingDto dto = BuildingDto.fromEntity(createdBuilding, signedLink);
-
-                return ResponseEntity.ok(dto);
+                signedLink = this.minioService.generatePresignedUrl(objectName);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
-        BuildingDto dto = BuildingDto.fromEntity(createdBuilding, null);
+        BuildingDto dto = BuildingDto.fromEntity(createdBuilding, signedLink);
         return ResponseEntity.ok(dto);
     }
 }
