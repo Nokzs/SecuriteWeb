@@ -25,7 +25,7 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
   const queryClient = useQueryClient();
   const secureFetch = useSecureFetch();
   const addBuilding = useMutation({
-    mutationFn: async (formData: Omit<Building, "id" | "apartmentCount">) => {
+    mutationFn: async (formData: Omit<Building, "id" | "syndicId">) => {
       const response = await secureFetch(`${API_URL}/buildings`, {
         body: JSON.stringify(formData),
         method: "POST",
@@ -41,9 +41,11 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
   const handleAddBuilding = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addBuilding.mutateAsync(newBuilding);
+      await addBuilding.mutateAsync({
+        ...newBuilding,
+        photoFilename: selectedFile ? selectedFile.name : null,
+      });
       setShowAddForm(false);
-      setNewBuilding({ name: "", address: "" });
     } catch (err: unknown) {
       if (err instanceof Error) {
         console.error("Erreur lors de l'ajout du bâtiment :", err.message);

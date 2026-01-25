@@ -54,7 +54,7 @@ public class BuildingController {
         UUID syndicId = ((CustomUserDetails) auth.getPrincipal()).getUuid();
         Building createdBuilding = buildingService.createBuilding(createBuildingDto, syndicId);
         String signedLink = null;
-        if (createBuildingDto.filename() != null) {
+        if (createBuildingDto.photoFilename() != null) {
             String objectName = createdBuilding.getId().toString() + "/"
                     + createdBuilding.getPhotoFilename();
             try {

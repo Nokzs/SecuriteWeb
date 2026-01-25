@@ -8,8 +8,6 @@ import { MainLayoutSyndicDashboard } from "./syndic/dashboard/mainLayout";
 import { BuildingLayoutSyndicDashboard } from "./syndic/building/BuildingLayout";
 import { BuildingsList } from "./syndic/building/buildingList";
 import { PublicRoute } from "./auth/PublicRoute";
-import { AuthRoute } from "./auth/AuthRoute";
-import { RoleRoute } from "./auth/RoleRoute";
 
 const routes = [
   {

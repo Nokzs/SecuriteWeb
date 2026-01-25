@@ -76,13 +76,6 @@ export const BuildingsList = () => {
                 <MapPin size={14} />
                 <p>{building.address}</p>
               </div>
-
-              <div className="mt-6 pt-4 border-t flex justify-between items-center text-sm font-medium">
-                <span className="text-slate-400">Appartements</span>
-                <span className="bg-slate-100 px-2 py-1 rounded text-slate-600">
-                  {building.apartmentCount || 0}
-                </span>
-              </div>
             </div>
           ))}
       </div>
