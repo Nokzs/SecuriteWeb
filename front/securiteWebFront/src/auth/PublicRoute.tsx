@@ -5,8 +5,12 @@ export function PublicRoute() {
   const location = useLocation();
 
   if (user) {
-    return <Navigate to="/" state={{ from: location }} replace />;
+    if (user.role === "PROPRIETAIRE") {
+      return <Navigate to="/owner" state={{ from: location }} replace />;
+    }
+    if (user.role === "SYNDIC") {
+      return <Navigate to="/syndic" state={{ from: location }} replace />;
+    }
   }
-
   return <Outlet />;
 }

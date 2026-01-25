@@ -31,13 +31,24 @@ export const Login = () => {
   });
   const { mutateAsync } = useMutation({
     mutationFn: async (data: LoginFormValues) => {
-      const response = await secureFetch(`${API_URL}/api/auth/login`, {
+      const formData = new URLSearchParams();
+      formData.append("email", data.email);
+      formData.append("password", data.password);
+
+      const response = await secureFetch(`${API_URL}/auth/login`, {
         method: "POST",
-        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: formData.toString(),
       });
-      if (response.ok) {
-        return response.json();
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erreur de connexion");
       }
+
+      return response.json();
     },
   });
   const navigate = useNavigate();
@@ -87,7 +98,6 @@ export const Login = () => {
             )}
           </div>
 
-          {/* Champ Mot de passe */}
           <div>
             <label
               htmlFor="password"
@@ -99,7 +109,7 @@ export const Login = () => {
               id="password"
               type="password"
               {...register("password")}
-              className={`w-full border p-3 rounded-xl outline-none transition-all ${
+              className={`w-full border p-3 rounded-xl text-black outline-none transition-all ${
                 errors.password
                   ? "border-red-400 focus:ring-2 focus:ring-red-100"
                   : "border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"

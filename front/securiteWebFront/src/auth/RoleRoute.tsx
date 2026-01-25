@@ -9,7 +9,9 @@ type RoleRouteProps = {
 
 export function RoleRoute({ allowedRoles, redirectPath }: RoleRouteProps) {
   const user = userStore((s) => s.user);
-  if (user?.role) return <div>RoleRoute component</div>;
+  if (!user?.role) {
+    Navigate({ to: "/", replace: true });
+  }
   if (!allowedRoles.includes(user?.role || "")) {
     Navigate({ to: redirectPath, replace: true });
   }

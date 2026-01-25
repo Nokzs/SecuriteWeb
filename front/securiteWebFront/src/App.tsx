@@ -8,6 +8,8 @@ import { MainLayoutSyndicDashboard } from "./syndic/dashboard/mainLayout";
 import { BuildingLayoutSyndicDashboard } from "./syndic/building/BuildingLayout";
 import { BuildingsList } from "./syndic/building/buildingList";
 import { PublicRoute } from "./auth/PublicRoute";
+import { RoleRoute } from "./auth/RoleRoute";
+import { AuthRoute } from "./auth/AuthRoute";
 
 const routes = [
   {
@@ -31,10 +33,10 @@ const routes = [
   },
   {
     id: "auth",
-    //element: <AuthRoute />,
+    element: <AuthRoute />,
     children: [
       {
-        // element: <RoleRoute allowedRoles={["SYNDIC"]} redirectPath="/owner" />,
+        element: <RoleRoute allowedRoles={["SYNDIC"]} redirectPath="/owner" />,
         children: [
           {
             path: "syndic",

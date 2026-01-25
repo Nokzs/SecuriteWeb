@@ -14,12 +14,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.securitewebback.auth.dto.CreateSyndicDto;
 import com.example.securitewebback.auth.dto.CreateUserDTO;
+import com.example.securitewebback.auth.entity.Syndic;
 import com.example.securitewebback.auth.entity.User;
 import com.example.securitewebback.auth.service.RegistrationService;
 import com.example.securitewebback.security.CustomUserDetails;
 
 import com.example.securitewebback.security.FormLoginSuccesHandler;
+import com.example.securitewebback.user.dto.UserDto;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,7 +35,6 @@ public class RegistrationController {
 
     private final RegistrationService registrationService;
     private final FormLoginSuccesHandler successHandler;
-    // On utilise l'implémentation standard pour les API basées sur les sessions
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     public RegistrationController(RegistrationService registrationService, FormLoginSuccesHandler successHandler) {
@@ -41,12 +43,12 @@ public class RegistrationController {
     }
 
     @PostMapping("/register")
-    public void register(@Valid @RequestBody CreateUserDTO dto,
+    public void register(@Valid @RequestBody CreateSyndicDto dto,
             HttpServletRequest request,
             HttpServletResponse response) {
 
         // 1. Création de l'utilisateur en base de données
-        User user = registrationService.registerUser(dto);
+        Syndic user = registrationService.registerSyndic(dto);
 
         CustomUserDetails userDetails = new CustomUserDetails(user);
         Authentication auth = new UsernamePasswordAuthenticationToken(
@@ -75,10 +77,20 @@ public class RegistrationController {
 
     @GetMapping("/csrf")
     public void initCsrf() {
+        // Méthode vide pour initialiser une session et obtenir un token CSRF
     }
 
-    @GetMapping("user")
-    public void getProfil(Principal principal) {
-
-    }
+    /*
+     * @GetMapping("user")
+     * public UserDto getProfil(Authentication authentication) {
+     * CustomUserDetails userDetails = (CustomUserDetails)
+     * authentication.getPrincipal();
+     * 
+     * User user = userRepository.findById(userDetails.getUuid())
+     * .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+     * "Utilisateur non trouvé"));
+     * 
+     * return UserDto.fromEntity(user);
+     * }
+     */
 }

@@ -11,6 +11,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
+      # Utilisation de mysqladmin ping avec le mot de passe en clair pour le test interne
       test:
         ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
       interval: 10s # Attendre 10s entre deux tests
@@ -37,12 +38,9 @@ services:
       retries: 5
 
   backend:
-    image: maven:3.9-eclipse-temurin-21
-    container_name: spring-api-dev
-    volumes:
-      - ./back/securiteWebBack/:/app # On monte ton code source
-    working_dir: /app
-    command: mvn spring-boot:run # On utilise Maven pour lancer l'app
+    build:
+      context: ./back/securiteWebBack/
+    container_name: spring-api
     ports:
       - "8080:8080"
     depends_on:
@@ -55,25 +53,19 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      # Variables pour ton code Java
       - MINIO_URL=http://minio:9000
       - MINIO_ACCESS_KEY=admin
       - MINIO_SECRET_KEY=password123
       - MINIO_BUCKET_NAME=documents-copro
 
+  # --- FRONTEND ---
   frontend:
-    image: node:20-alpine
-    container_name: vite-front-dev
-    working_dir: /app
-    volumes:
-      - ./front/securiteWebFront/:/app
-      # On crée un volume anonyme pour node_modules afin qu'il ne soit pas écrasé par ton PC
-      - /app/node_modules
+    build:
+      context: ./front/securiteWebFront/
+    container_name: vite-front
     ports:
-      - "3000:5173"
-    environment:
-      - VITE_API_URL=http://localhost:8080
-    # On ajoute "npm install" avant le "npm run dev"
-    command: sh -c "npm install && npm run dev -- --host"
+      - "3000:80"
     depends_on:
       - backend
 

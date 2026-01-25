@@ -23,10 +23,6 @@ public interface CreateUserDTO {
     @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Format de téléphone invalide")
     String telephone();
 
-    @NotBlank(message = "Le rôle est obligatoire")
-    @Pattern(regexp = "^(SYNDIC|PROPRIETAIRE)$", message = "Le rôle doit être SYNDIC ou PROPRIETAIRE")
-    String role();
-
     User toEntity();
 
 }

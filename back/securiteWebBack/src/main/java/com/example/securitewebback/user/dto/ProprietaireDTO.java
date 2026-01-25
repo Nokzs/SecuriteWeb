@@ -1,11 +1,22 @@
 package com.example.securitewebback.user.dto;
 
-import com.example.securitewebback.auth.entity.Role;
+import com.example.securitewebback.auth.entity.Proprietaire;
 
-public record ProprietaireDTO(
-                String email,
-                String telephone,
-                Role role,
-                String nom,
-                String prenom) implements UserDto {
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class ProprietaireDTO extends UserDto {
+                private String nom;
+                private String prenom;
+
+                public ProprietaireDTO(Proprietaire p) {
+                                this.setUuid(p.getId());
+                                this.setEmail(p.getEmail());
+                                this.setTelephone(p.getTelephone());
+                                this.setRole(p.getRole());
+                                this.nom = p.getNom();
+                                this.prenom = p.getPrenom();
+                }
 }

@@ -53,7 +53,8 @@ export const BuildingsList = () => {
       {showAddForm && <AddBuildingPopUp setShowAddForm={setShowAddForm} />}{" "}
       {/* Liste des b�timents */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {!isLoading &&
+        {data &&
+          !isLoading &&
           data?.map((building: Building) => (
             <div
               key={building.id}

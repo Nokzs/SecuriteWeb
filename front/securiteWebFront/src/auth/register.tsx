@@ -114,7 +114,7 @@ export const Register = () => {
               id="password"
               type="password"
               {...register("password")}
-              className={`w-full border p-3 rounded-xl outline-none transition-all ${
+              className={`w-full text-black border p-3 rounded-xl outline-none transition-all ${
                 errors.password
                   ? "border-red-400 focus:ring-2 focus:ring-red-100"
                   : "border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -130,7 +130,6 @@ export const Register = () => {
 
           <hr className="border-slate-100 my-2" />
 
-          {/* Informations Agence */}
           <div>
             <label
               htmlFor="nomAgence"

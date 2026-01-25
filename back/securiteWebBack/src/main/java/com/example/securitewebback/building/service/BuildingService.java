@@ -11,7 +11,6 @@ import com.example.securitewebback.building.dto.CreateBuildingDto;
 import com.example.securitewebback.building.entity.Building;
 import com.example.securitewebback.building.repository.BuildingRepository;
 import com.example.securitewebback.storage.MinioService;
-import com.example.securitewebback.utils.pagination.PaginationMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,22 +27,20 @@ public class BuildingService {
     }
 
     public Page<BuildingDto> getBuildingsBySyndicId(UUID syndicId, Pageable pageable) {
-
-        return PaginationMapper.paginate(
-                pageable,
-                () -> buildingRepository.findBySyndicId(syndicId, pageable),
-                (building) -> {
-                    String downloadUrl = null;
-                    if (building.getPhotoFilename() != null) {
-                        try {
-                            String objectName = building.getId().toString() + "/" + building.getPhotoFilename();
-                            downloadUrl = minioService.generatePresignedUrl(objectName);
-                        } catch (Exception e) {
-                            log.error("Erreur génération lien photo", e);
-                        }
-                    }
-                    return BuildingDto.fromEntity(building, downloadUrl);
-                });
+        Page<Building> buildingPage = buildingRepository.findBySyndicId(syndicId, pageable);
+        Page<BuildingDto> buildingDtoPage = buildingPage.map((building) -> {
+            String downloadUrl = null;
+            if (building.getPhotoFilename() != null) {
+                try {
+                    String objectName = building.getId().toString() + "/" + building.getPhotoFilename();
+                    downloadUrl = minioService.generatePresignedUrl(objectName);
+                } catch (Exception e) {
+                    log.error("Erreur génération lien photo", e);
+                }
+            }
+            return BuildingDto.fromEntity(building, downloadUrl);
+        });
+        return buildingDtoPage;
     }
 
     public Building createBuilding(CreateBuildingDto createBuildingDto, UUID syndicId) {
