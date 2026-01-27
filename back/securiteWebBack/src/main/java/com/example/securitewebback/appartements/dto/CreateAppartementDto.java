@@ -7,15 +7,27 @@ import com.example.securitewebback.auth.entity.Proprietaire;
 import com.example.securitewebback.building.entity.Building;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
-public record CreateAppartementDto(@NotBlank(message = "le numero du lot doit être renseigné") String numero,
+public record CreateAppartementDto(
+        @NotBlank(message = "le numero du lot doit être renseigné")
+        String numero,
+
         Integer etage,
         Double surface,
         Integer nombrePieces,
         String photoFilename,
-        @NotBlank(message = "le tantième du lot doit être renseigné") Integer tantiemes,
+
+        @NotNull(message = "le tantième du lot doit être renseigné")
+        @Positive(message = "le tantième doit être un nombre positif")
+        Integer tantiemes,
+
+        @NotNull(message = "l'ID de l'immeuble est obligatoire")
         UUID buildingId,
-        String ownerEmail) {
+
+        String ownerEmail
+) {
 
     public Apartment toEntity(Building building, Proprietaire owner) {
         Apartment apt = new Apartment();

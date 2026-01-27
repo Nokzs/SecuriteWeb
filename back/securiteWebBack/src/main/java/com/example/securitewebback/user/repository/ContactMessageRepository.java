@@ -1,15 +1,14 @@
 package com.example.securitewebback.user.repository;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.example.securitewebback.auth.entity.Syndic;
+import com.example.securitewebback.user.entity.ContactMessage;
 
 @Repository
-public interface SyndicRepository extends JpaRepository<Syndic, UUID> {
+public interface ContactMessageRepository extends JpaRepository<ContactMessage, UUID> {
 
-    Optional<Syndic> findByEmail(String email);
 }
+

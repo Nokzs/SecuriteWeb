@@ -11,6 +11,7 @@ import { PublicRoute } from "./auth/PublicRoute";
 import { RoleRoute } from "./auth/RoleRoute";
 import { AuthRoute } from "./auth/AuthRoute";
 import { ApartmentList } from "./syndic/apartments/component/apartmentsList";
+import { Home } from "./public/home";
 
 const routes = [
   {
@@ -20,7 +21,7 @@ const routes = [
       {
         path: "/",
         id: "root",
-        element: <>Welcome</>,
+        element: <Home />,
       },
       {
         path: "/login",
