@@ -11,6 +11,7 @@ import { PublicRoute } from "./auth/PublicRoute";
 import { RoleRoute } from "./auth/RoleRoute";
 import { AuthRoute } from "./auth/AuthRoute";
 import { ApartmentList } from "./syndic/apartments/component/apartmentsList";
+import { FirstOwnerLogin } from "./owner/FirstOwnerLogin";
 
 const routes = [
   {
@@ -35,9 +36,10 @@ const routes = [
   {
     id: "auth",
     element: <AuthRoute />,
+    middleware: [],
     children: [
       {
-        element: <RoleRoute allowedRoles={["SYNDIC"]} redirectPath="/owner" />,
+        element: <RoleRoute allowedRoles={["SYNDIC"]} redirectPath="/" />,
         children: [
           {
             path: "syndic",
@@ -62,7 +64,7 @@ const routes = [
                 children: [
                   {
                     index: true,
-                    element: <Navigate to="building" replace />, // Par défaut on va sur les apparts
+                    element: <Navigate to="building" replace />, // Par de9faut on va sur les apparts
                   },
                   {
                     path: "building",
@@ -75,6 +77,19 @@ const routes = [
                 ],
               },
             ],
+          },
+        ],
+      },
+      {
+        element: <RoleRoute allowedRoles={["PROPRIETAIRE"]} redirectPath="/" />,
+        children: [
+          {
+            path: "owner/first-login",
+            element: <FirstOwnerLogin />,
+          },
+          {
+            path: "owner",
+            element: <>Owner</>,
           },
         ],
       },

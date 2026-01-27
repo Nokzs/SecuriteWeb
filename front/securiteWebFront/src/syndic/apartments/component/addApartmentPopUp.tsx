@@ -10,6 +10,7 @@ import type { Apartment } from "./apartmentsList";
 type AddApartmentPopUpProps = {
   setShowAddForm: React.Dispatch<React.SetStateAction<boolean>>;
   building?: { totalTantieme?: number | null; currentTantieme?: number | null };
+  apartmentToEdit?: Apartment | null;
 };
 
 const API_URL = import.meta.env.VITE_APIURL;
@@ -17,26 +18,33 @@ const API_URL = import.meta.env.VITE_APIURL;
 export const AddApartmentPopUp = ({
   setShowAddForm,
   building,
+  apartmentToEdit,
 }: AddApartmentPopUpProps) => {
+  const isEditMode = !!apartmentToEdit;
   const { buildingId } = useParams<{ buildingId: string }>();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(
+    isEditMode && apartmentToEdit?.photoFilename
+      ? apartmentToEdit.photoFilename
+      : null,
+  );
+  const [deletePhoto, setDeletePhoto] = useState(false);
   const [newApartment, setNewApartment] = useState<
     Omit<Apartment, "buildingUuid" | "id" | "ownerId" | "photoFilename"> & {
       ownerEmail?: string;
     }
   >({
-    numero: "",
-    etage: undefined,
-    nombrePieces: undefined,
-    tantiemes: 0,
-    surface: undefined,
+    numero: apartmentToEdit?.numero ?? "",
+    etage: apartmentToEdit?.etage,
+    nombrePieces: apartmentToEdit?.nombrePieces,
+    tantiemes: apartmentToEdit?.tantiemes ?? 0,
+    surface: apartmentToEdit?.surface,
     ownerEmail: "",
   });
 
-  const user = userStore(
-    (state: { user: { uuid?: string } | null }) => state.user,
-  );
+  const user = userStore((s) => s.user);
+  const get = userStore((s) => s.get);
+  const parsedUser = user ? get(user) : null;
   const queryClient = useQueryClient();
   const secureFetch = useSecureFetch();
   const uploadFile = useUploadFile();
@@ -46,7 +54,14 @@ export const AddApartmentPopUp = ({
       const file = e.target.files[0];
       setSelectedFile(file);
       setPreview(URL.createObjectURL(file));
+      setDeletePhoto(false);
     }
+  };
+
+  const handleDeletePhoto = () => {
+    setSelectedFile(null);
+    setPreview(null);
+    setDeletePhoto(true);
   };
   const ownerEmailChange = (email: string) => {
     setNewApartment({ ...newApartment, ownerEmail: email });
@@ -54,10 +69,14 @@ export const AddApartmentPopUp = ({
   const totalTantieme = building?.totalTantieme ?? 0;
   const currentTantieme = building?.currentTantieme ?? 0;
   const remainingTantiemes = Math.max(totalTantieme - currentTantieme, 0);
-  const exceedsQuota =
-    totalTantieme > 0 && newApartment.tantiemes > remainingTantiemes;
+  const currentApartmentTantiemes = apartmentToEdit?.tantiemes ?? 0;
+  const effectiveRemainingTantiemes =
+    remainingTantiemes + (isEditMode ? currentApartmentTantiemes : 0);
 
-  const addApartment = useMutation({
+  const exceedsQuota =
+    totalTantieme > 0 && newApartment.tantiemes > effectiveRemainingTantiemes;
+
+  const saveApartment = useMutation({
     mutationFn: async (
       formData: Omit<
         Apartment,
@@ -66,6 +85,31 @@ export const AddApartmentPopUp = ({
         photoFilename: string | null;
       },
     ) => {
+      if (!buildingId) throw new Error("Aucun immeuble sélectionné");
+
+      if (isEditMode) {
+        const data = {
+          numero: formData.numero,
+          surface: formData.surface,
+          nombrePieces: formData.nombrePieces,
+          tantiemes: formData.tantiemes,
+          ownerEmail: formData.ownerEmail,
+          deletePhoto: deletePhoto,
+          photoFilename: selectedFile ? selectedFile.name : null,
+        };
+        const response = await secureFetch(
+          `${API_URL}/apartment/${apartmentToEdit.id}`,
+          {
+            body: JSON.stringify(data),
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+
+        if (!response.ok) throw new Error("Échec de la modification");
+        return response.json() as Promise<Apartment>;
+      }
+
       const data = { ...formData, buildingId: buildingId };
       const response = await secureFetch(`${API_URL}/apartment`, {
         body: JSON.stringify(data),
@@ -78,12 +122,15 @@ export const AddApartmentPopUp = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["apartments", user?.uuid, buildingId],
+        queryKey: ["apartments", parsedUser?.uuid, buildingId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["apartments", parsedUser?.uuid, buildingId],
       });
     },
   });
 
-  const handleAddApartment = async (e: React.FormEvent) => {
+  const handleSaveApartment = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!buildingId) {
@@ -93,13 +140,13 @@ export const AddApartmentPopUp = ({
 
     if (exceedsQuota) {
       alert(
-        `Impossible de créer l'appartement : tantièmes demandés (${newApartment.tantiemes}) > tantièmes restants (${remainingTantiemes}).`,
+        `Impossible de sauvegarder l'appartement : tantièmes demandés (${newApartment.tantiemes}) > tantièmes restants (${effectiveRemainingTantiemes}).`,
       );
       return;
     }
 
     try {
-      const apartment: Apartment = await addApartment.mutateAsync({
+      const apartment: Apartment = await saveApartment.mutateAsync({
         ...newApartment,
         photoFilename: selectedFile ? selectedFile.name : null,
       });
@@ -108,14 +155,26 @@ export const AddApartmentPopUp = ({
         await uploadFile(selectedFile, apartment.photoFilename);
       }
 
+      if (deletePhoto) {
+        setDeletePhoto(false);
+      }
+
       setShowAddForm(false);
       setSelectedFile(null);
       setPreview(null);
+      setDeletePhoto(false);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.error("Erreur lors de l'ajout de l'appartement :", err.message);
+        console.error(
+          "Erreur lors de la sauvegarde de l'appartement :",
+          err.message,
+        );
       }
-      alert("Erreur lors de l'ajout");
+      alert(
+        isEditMode
+          ? "Erreur lors de la modification"
+          : "Erreur lors de l'ajout",
+      );
     }
   };
 
@@ -129,15 +188,15 @@ export const AddApartmentPopUp = ({
       <div className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 p-8 animate-in zoom-in-95 duration-200">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-slate-800">
-            Ajouter un appartement
+            {isEditMode ? "Modifier l'appartement" : "Ajouter un appartement"}
           </h2>
           <p className="text-sm text-slate-500">
             Remplissez les informations et ajoutez une photo.
           </p>
         </div>
 
-        <OwnerSearchByEmail setOwnerEmail={ownerEmailChange} />
-        <form onSubmit={handleAddApartment} className="space-y-4">
+        {!isEditMode && <OwnerSearchByEmail setOwnerEmail={ownerEmailChange} />}
+        <form onSubmit={handleSaveApartment} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Numéro
@@ -240,7 +299,9 @@ export const AddApartmentPopUp = ({
             {!!building && totalTantieme > 0 && (
               <p className="text-xs mt-1 text-slate-500">
                 Restant:{" "}
-                <span className="font-semibold">{remainingTantiemes}</span>
+                <span className="font-semibold">
+                  {effectiveRemainingTantiemes}
+                </span>
                 {exceedsQuota && (
                   <span className="text-red-600 font-medium">
                     {" "}
@@ -251,9 +312,20 @@ export const AddApartmentPopUp = ({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Photo de l'appartement
-            </label>
+            <div className="flex items-center justify-between gap-3 mb-1">
+              <label className="block text-sm font-medium text-slate-700">
+                Photo de l'appartement
+              </label>
+              {isEditMode && (preview || apartmentToEdit?.photoFilename) && (
+                <button
+                  type="button"
+                  onClick={handleDeletePhoto}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                >
+                  Supprimer la photo
+                </button>
+              )}
+            </div>
             <div className="relative group border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-indigo-400 transition-colors bg-slate-50">
               <input
                 type="file"
@@ -311,10 +383,14 @@ export const AddApartmentPopUp = ({
             </button>
             <button
               type="submit"
-              disabled={addApartment.isPending || exceedsQuota}
+              disabled={saveApartment.isPending || exceedsQuota}
               className="flex-1 bg-indigo-600 text-white font-medium py-3 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all disabled:opacity-50"
             >
-              {addApartment.isPending ? "Envoi..." : "Créer l'appartement"}
+              {saveApartment.isPending
+                ? "Envoi..."
+                : isEditMode
+                  ? "Enregistrer"
+                  : "Créer l'appartement"}
             </button>
           </div>
         </form>

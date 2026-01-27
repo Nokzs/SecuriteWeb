@@ -23,6 +23,8 @@ export const BuildingsList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const secureFetch = useSecureFetch();
   const user = userStore((s) => s.user);
+  const get = userStore((s) => s.get);
+  const parsedUser = user ? get(user) : null;
   const [filter, setFilter] = useState<{ limit: number; page: number }>({
     limit: 5,
     page: 0,
@@ -31,7 +33,7 @@ export const BuildingsList = () => {
     setFilter((filter) => ({ ...filter, page: newPage }));
   };
   const { data, isLoading } = useQuery<Page<Building>>({
-    queryKey: ["buildings", user?.uuid, filter, searchTerm],
+    queryKey: ["buildings", parsedUser?.uuid, filter, searchTerm],
     queryFn: async () => {
       const res = await secureFetch(
         `${API_URL}/building?limit=${filter.limit}&page=${filter.page}&search=${encodeURIComponent(searchTerm)}`,
@@ -43,7 +45,7 @@ export const BuildingsList = () => {
 
       return (await res.json()) as Page<Building>;
     },
-    enabled: !!user?.uuid,
+    enabled: !!parsedUser?.uuid,
     placeholderData: keepPreviousData,
   });
   if (isLoading) {

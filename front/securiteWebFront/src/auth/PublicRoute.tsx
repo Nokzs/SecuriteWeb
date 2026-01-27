@@ -1,16 +1,20 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { userStore } from "../store/userStore";
+
 export function PublicRoute() {
   const user = userStore((s) => s.user);
-  const location = useLocation();
+  const get = userStore((s) => s.get);
 
   if (user) {
-    if (user.role === "PROPRIETAIRE") {
-      return <Navigate to="/owner" state={{ from: location }} replace />;
+    const parsedUser = get(user);
+
+    if (parsedUser?.role === "PROPRIETAIRE") {
+      return <Navigate to="/owner" replace />;
     }
-    if (user.role === "SYNDIC") {
-      return <Navigate to="/syndic" state={{ from: location }} replace />;
+    if (parsedUser?.role === "SYNDIC") {
+      return <Navigate to="/syndic" replace />;
     }
   }
+
   return <Outlet />;
 }

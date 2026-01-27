@@ -3,8 +3,6 @@ package com.example.securitewebback.appartements.controller;
 
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
-
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,11 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.securitewebback.appartements.dto.ApartementAndBuildingDto;
 import com.example.securitewebback.appartements.dto.ApartementDto;
 import com.example.securitewebback.appartements.dto.CreateAppartementDto;
+import com.example.securitewebback.appartements.dto.UpdateApartmentDto;
 import com.example.securitewebback.appartements.entity.Apartment;
 import com.example.securitewebback.appartements.service.ApartmentService;
 
 import com.example.securitewebback.storage.MinioService;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController()
@@ -68,6 +69,7 @@ public class appartementsController {
                     + createdApartment.getId().toString()
                     + "/"
                     + createdApartment.getPhotoFilename();
+
             try {
                 signedLink = this.minioService.generatePresignedUrl(objectName);
             } catch (Exception e) {
@@ -77,5 +79,27 @@ public class appartementsController {
 
         ApartementDto dto = ApartementDto.fromEntity(createdApartment, signedLink);
         return ResponseEntity.ok(dto);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApartementDto> updateApartment(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateApartmentDto dto) {
+
+        Apartment apartment = apartmentService.update(id, dto);
+
+        String uploadUrl = null;
+
+        if (dto.photoFilename() != null) {
+
+            String objectName = apartment.getBuilding().getId().toString() + "/"
+                    + apartment.getId().toString()
+                    + "/"
+                    + apartment.getPhotoFilename();
+            uploadUrl = minioService.generatePresignedUrl(objectName);
+        }
+
+        // 3. Transformation en DTO de réponse
+        return ResponseEntity.ok(ApartementDto.fromEntity(apartment, uploadUrl));
     }
 }

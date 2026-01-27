@@ -26,7 +26,7 @@ const registerSchema = z.object({
 });
 type RegisterFormValues = z.infer<typeof registerSchema>;
 export const Register = () => {
-  const setUser = userStore((s: UserStoreType) => s.setUser);
+  const setToken = userStore((s: UserStoreType) => s.setToken);
   const secureFetch = useSecureFetch();
   const {
     register,
@@ -58,8 +58,8 @@ export const Register = () => {
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       const user = await mutateAsync(data);
-      setUser(user);
-      navigate(`${user.role}/dashboard`);
+      setToken(user.access);
+      navigate("/syndic", { replace: true });
     } catch (error) {
       console.error("Erreur de connexion", error);
     }

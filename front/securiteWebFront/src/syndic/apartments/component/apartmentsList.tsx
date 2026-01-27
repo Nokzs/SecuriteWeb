@@ -34,8 +34,12 @@ export const ApartmentList = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const { buildingId } = useParams<{ buildingId: string }>();
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [apartmentToEdit, setApartmentToEdit] = useState<Apartment | null>(null);
   const secureFetch = useSecureFetch();
   const user = userStore((s) => s.user);
+  const get = userStore((s) => s.get);
+  const parsedUser = user ? get(user) : null;
   const [filter, setFilter] = useState<{ limit: number; page: number }>({
     limit: 5,
     page: 0,
@@ -46,7 +50,7 @@ export const ApartmentList = () => {
   };
 
   const { data, isLoading } = useQuery<ApartementAndBuildingDto>({
-    queryKey: ["apartments", user?.uuid, buildingId, filter, searchTerm],
+    queryKey: ["apartments", parsedUser?.uuid, buildingId, filter, searchTerm],
     queryFn: async () => {
       const res = await secureFetch(
         `${API_URL}/apartment/${buildingId}?limit=${filter.limit}&page=${filter.page}&search=${encodeURIComponent(searchTerm)}`,
@@ -58,13 +62,19 @@ export const ApartmentList = () => {
 
       return (await res.json()) as ApartementAndBuildingDto;
     },
-    enabled: !!user?.uuid && !!buildingId,
+    enabled: !!parsedUser?.uuid && !!buildingId,
     placeholderData: keepPreviousData,
   });
 
   if (isLoading) {
     return <span className="loading loading-spinner loading-lg"></span>;
   }
+
+  const openEditModal = (apartment: Apartment) => {
+    setApartmentToEdit(apartment);
+    setShowEditModal(true);
+    setShowAddForm(false);
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -94,6 +104,14 @@ export const ApartmentList = () => {
         />
       )}
 
+      {showEditModal && apartmentToEdit && (
+        <AddApartmentPopUp
+          setShowAddForm={setShowEditModal}
+          building={data?.building}
+          apartmentToEdit={apartmentToEdit}
+        />
+      )}
+
       <div className="mb-6 relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Search className="text-slate-400" size={18} />
@@ -110,7 +128,12 @@ export const ApartmentList = () => {
           {data &&
             !isLoading &&
             data.appartement.content.map((apartment: Apartment) => (
-              <ApartmentCard key={apartment.id} apartment={apartment} />
+              <ApartmentCard
+                key={apartment.id}
+                apartment={apartment}
+                building={data.building}
+                openModal={openEditModal}
+              />
             ))}
         </div>
 

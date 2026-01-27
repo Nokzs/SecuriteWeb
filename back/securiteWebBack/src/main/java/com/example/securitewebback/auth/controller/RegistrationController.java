@@ -8,6 +8,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.securitewebback.auth.dto.ChangePasswordDto;
 import com.example.securitewebback.auth.dto.CreateProprietaireDto;
 import com.example.securitewebback.auth.dto.CreateSyndicDto;
 import com.example.securitewebback.auth.entity.Proprietaire;
@@ -26,9 +28,8 @@ import com.example.securitewebback.security.CustomUserDetails;
 import com.example.securitewebback.security.FormLoginSuccesHandler;
 import com.example.securitewebback.user.dto.ProprietaireDTO;
 import com.example.securitewebback.user.dto.UserDto;
-import com.example.securitewebback.user.repository.ProprietaireRepository;
+import com.example.securitewebback.user.service.UserService;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -38,11 +39,17 @@ import jakarta.validation.Valid;
 public class RegistrationController {
 
     private final RegistrationService registrationService;
+    private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
     private final FormLoginSuccesHandler successHandler;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
-    public RegistrationController(RegistrationService registrationService, FormLoginSuccesHandler successHandler) {
+    public RegistrationController(RegistrationService registrationService, UserService userService,
+            PasswordEncoder passwordEncoder,
+            FormLoginSuccesHandler successHandler) {
         this.registrationService = registrationService;
+        this.userService = userService;
+        this.passwordEncoder = passwordEncoder;
         this.successHandler = successHandler;
     }
 
@@ -65,14 +72,11 @@ public class RegistrationController {
 
         SecurityContextHolder.setContext(context);
 
-        // 5. CRUCIAL : Sauvegarde explicite dans la session (via le repository)
-        // Sans cette ligne, la session est oubliée à la fin de la requête
         securityContextRepository.saveContext(context, request, response);
 
-        // 6. Déclenchement du succès (envoi de la réponse JSON / Cookie CSRF)
         try {
             successHandler.onAuthenticationSuccess(request, response, auth);
-        } catch (IOException | ServletException e) {
+        } catch (IOException e) {
             throw new RuntimeException("Erreur lors de la finalisation de l'inscription", e);
         }
     }
@@ -89,17 +93,24 @@ public class RegistrationController {
         ProprietaireDTO proprietaireDTO = (ProprietaireDTO) UserDto.fromEntity(proprietaire);
         return ResponseEntity.ok(proprietaireDTO);
     }
-    /*
-     * @GetMapping("user")
-     * public UserDto getProfil(Authentication authentication) {
-     * CustomUserDetails userDetails = (CustomUserDetails)
-     * authentication.getPrincipal();
-     * 
-     * User user = userRepository.findById(userDetails.getUuid())
-     * .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-     * "Utilisateur non trouvé"));
-     * 
-     * return UserDto.fromEntity(user);
-     * }
-     */
+
+    @PreAuthorize("hasRole('PROPRIETAIRE')")
+    @PostMapping("/change-password")
+    public void changePassword(@Valid @RequestBody ChangePasswordDto dto, Authentication authentication,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+        if (passwordEncoder.matches(dto.newPassword(), userDetails.getPassword())) {
+            throw new IllegalArgumentException("Le nouveau mot de passe doit être différent");
+        }
+
+        userService.changePassword(userDetails.getUser(), dto.newPassword());
+
+        try {
+            successHandler.onAuthenticationSuccess(request, response, authentication);
+        } catch (IOException e) {
+            throw new RuntimeException("Erreur lors de la réauthentification", e);
+        }
+    }
 }
