@@ -1,8 +1,6 @@
 package com.example.securitewebback.auth.dto;
 
-import com.example.securitewebback.auth.entity.Role;
 import com.example.securitewebback.auth.entity.Syndic;
-import com.example.securitewebback.auth.entity.User;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

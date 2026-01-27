@@ -24,19 +24,22 @@ public class BuildingService {
     private final MinioService minioService;
     private SyndicRepository syndicRepository;
 
-    public BuildingService(BuildingRepository buildingRepository, MinioService MinioService) {
+    public BuildingService(BuildingRepository buildingRepository, MinioService MinioService,
+            SyndicRepository syndicRepository) {
         this.minioService = MinioService;
         this.buildingRepository = buildingRepository;
+        this.syndicRepository = syndicRepository;
     }
 
-    public Page<BuildingDto> getBuildingsBySyndicId(UUID syndicId, Pageable pageable) {
-        Page<Building> buildingPage = buildingRepository.findBySyndicId(syndicId, pageable);
+    public Page<BuildingDto> getBuildingsBySyndicId(UUID syndicId, Pageable pageable, String search) {
+        Page<Building> buildingPage = buildingRepository.findByNameContainingIgnoreCaseAndSyndicId(search, syndicId,
+                pageable);
         Page<BuildingDto> buildingDtoPage = buildingPage.map((building) -> {
             String downloadUrl = null;
             if (building.getPhotoFilename() != null) {
                 try {
                     String objectName = building.getId().toString() + "/" + building.getPhotoFilename();
-                    downloadUrl = minioService.generatePresignedUrl(objectName);
+                    downloadUrl = minioService.presignedDownloadUrl(objectName);
                 } catch (Exception e) {
                     log.error("Erreur génération lien photo", e);
                 }
@@ -51,7 +54,6 @@ public class BuildingService {
         Building building = createBuildingDto.ToEntity();
         Syndic syndic = syndicRepository.findById(syndicId)
                 .orElseThrow(() -> new RuntimeException("Syndic non trouvé"));
-
         building.setSyndic(syndic);
         Building savedBuilding = buildingRepository.save(building);
         return savedBuilding;

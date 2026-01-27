@@ -3,19 +3,25 @@ package com.example.securitewebback.storage;
 import io.minio.*;
 import io.minio.http.Method;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class MinioService {
 
-    private final MinioClient minioClient;
+    private final MinioClient minioInternalClient;
+    private final MinioClient minioExternalClient;
+
+    public MinioService(
+            @Qualifier("minioInternalClient") MinioClient minioInternalClient,
+            @Qualifier("minioExternalClient") MinioClient minioExternalClient) {
+        this.minioInternalClient = minioInternalClient;
+        this.minioExternalClient = minioExternalClient;
+    }
 
     @Value("${minio.bucketName}")
     private String bucketName;
@@ -26,15 +32,13 @@ public class MinioService {
     @PostConstruct
     public void initializeBucket() {
         try {
-            boolean found = minioClient.bucketExists(
+            boolean found = minioInternalClient.bucketExists(
                     BucketExistsArgs.builder().bucket(bucketName).build());
             if (!found) {
-                minioClient.makeBucket(
+                minioInternalClient.makeBucket(
                         MakeBucketArgs.builder().bucket(bucketName).build());
-                log.info("Bucket '{}' créé avec succès.", bucketName);
             }
         } catch (Exception e) {
-            log.error("Erreur lors de l'initialisation de MinIO : {}", e.getMessage());
         }
     }
 
@@ -45,13 +49,15 @@ public class MinioService {
      */
     public String generatePresignedUrl(String objectName) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            String signedUrl = minioExternalClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
-                            .method(Method.GET)
+                            .method(Method.PUT)
                             .bucket(bucketName)
                             .object(objectName)
-                            .expiry(5, TimeUnit.MINUTES) // URL valide 10 min
+                            .expiry(15, TimeUnit.MINUTES)
                             .build());
+
+            return signedUrl;
         } catch (Exception e) {
             throw new RuntimeException("Impossible de générer l'URL : " + e.getMessage());
         }
@@ -62,7 +68,8 @@ public class MinioService {
      */
     public String presignedDownloadUrl(String objectName) {
         try {
-            return minioClient.getPresignedObjectUrl(
+
+            return minioExternalClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
@@ -79,13 +86,13 @@ public class MinioService {
      */
     public void remove(String objectName) {
         try {
-            minioClient.removeObject(
+            minioInternalClient.removeObject(
                     RemoveObjectArgs.builder()
                             .bucket(bucketName)
                             .object(objectName)
                             .build());
         } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la suppression : " + e.getMessage());
+            throw new RuntimeException("Erreur lors de laundefined suppression : " + e.getMessage());
         }
     }
 }

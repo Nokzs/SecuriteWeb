@@ -36,7 +36,13 @@ public class Building {
     @Column(nullable = true)
     private String photoFilename;
 
+    @Column(nullable = false)
+    private Integer totalTantieme = 1000;
+
+    @Column(nullable = false)
+    private Integer currentTantieme = 0;
+
     @ManyToOne
-    @JoinColumn(name = "syndic_id") // Crée la colonne de clé étrangère dans la table building
+    @JoinColumn(name = "syndic_id")
     private Syndic syndic;
 }

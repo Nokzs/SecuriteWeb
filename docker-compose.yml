@@ -27,6 +27,7 @@ services:
     environment:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: password123
+      MINIO_REGION: us-east-1
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -55,7 +56,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-      - MINIO_URL=http://minio:9000
+      - MINIO_INTERNAL_URL=http://minio:9000
+      - MINIO_EXTERNAL_URL=http://localhost:9000
       - MINIO_ACCESS_KEY=admin
       - MINIO_SECRET_KEY=password123
       - MINIO_BUCKET_NAME=documents-copro
@@ -85,7 +87,8 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:9000 admin password123;
+       /usr/bin/mc alias set myminio http://minio:9000 admin password123;
+
       /usr/bin/mc mb myminio/documents-copro;
       /usr/bin/mc anonymous set public myminio/documents-copro;
       exit 0;

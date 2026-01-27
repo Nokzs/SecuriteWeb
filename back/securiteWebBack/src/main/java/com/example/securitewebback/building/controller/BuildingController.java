@@ -22,8 +22,11 @@ import com.example.securitewebback.building.service.BuildingService;
 import com.example.securitewebback.security.CustomUserDetails;
 import com.example.securitewebback.storage.MinioService;
 
+import lombok.extern.slf4j.Slf4j;
+
 @RestController()
 @RequestMapping("/api/building")
+@Slf4j
 public class BuildingController {
     private final BuildingService buildingService;
     private final MinioService minioService;
@@ -36,13 +39,14 @@ public class BuildingController {
     @GetMapping
     public ResponseEntity<Page<BuildingDto>> getBuildings(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "5") int limit,
+            @RequestParam(required = false) String search,
             Authentication auth) {
         UUID syndicId = ((CustomUserDetails) auth.getPrincipal()).getUuid();
 
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, limit);
 
-        Page<BuildingDto> buildingPage = buildingService.getBuildingsBySyndicId(syndicId, pageable);
+        Page<BuildingDto> buildingPage = buildingService.getBuildingsBySyndicId(syndicId, pageable, search);
 
         return ResponseEntity.ok(buildingPage);
     }
@@ -57,6 +61,7 @@ public class BuildingController {
         if (createBuildingDto.photoFilename() != null) {
             String objectName = createdBuilding.getId().toString() + "/"
                     + createdBuilding.getPhotoFilename();
+            log.info("Generating signed URL for object: " + objectName);
             try {
                 signedLink = this.minioService.generatePresignedUrl(objectName);
             } catch (Exception e) {

@@ -8,8 +8,11 @@ import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 public class MinioConfig {
-    @Value("${minio.url}")
-    private String url;
+    @Value("${minio.internalUrl}")
+    private String internalUrl;
+
+    @Value("${minio.externalUrl}")
+    private String externalUrl;
 
     @Value("${minio.accessKey}")
     private String accessKey;
@@ -17,11 +20,21 @@ public class MinioConfig {
     @Value("${minio.secretKey}")
     private String accessSecret;
 
-    @Bean
-    public MinioClient minioClient() {
+    @Bean("minioInternalClient")
+    public MinioClient minioInternalClient() {
         return MinioClient.builder()
-                .endpoint(url)
+                .endpoint(internalUrl)
                 .credentials(accessKey, accessSecret)
+                .region("us-east-1")
+                .build();
+    }
+
+    @Bean("minioExternalClient")
+    public MinioClient minioExternalClient() {
+        return MinioClient.builder()
+                .endpoint(externalUrl)
+                .credentials(accessKey, accessSecret)
+                .region("us-east-1")
                 .build();
     }
 }

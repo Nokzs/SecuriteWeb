@@ -3,7 +3,9 @@ package com.example.securitewebback.auth.service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.securitewebback.auth.dto.CreateProprietaireDto;
 import com.example.securitewebback.auth.dto.CreateSyndicDto;
+import com.example.securitewebback.auth.entity.Proprietaire;
 import com.example.securitewebback.auth.entity.Syndic;
 import com.example.securitewebback.auth.entity.User;
 import com.example.securitewebback.user.repository.SyndicRepository;
@@ -33,5 +35,21 @@ public class RegistrationService {
         newUser.setPassword(encodedPassword);
 
         return syndicRepository.save(newUser);
+    }
+
+    public Proprietaire registerProprietaire(CreateProprietaireDto dto) {
+        if (userRepository.findByEmail(dto.email()).isPresent()) {
+            throw new IllegalArgumentException("Email already in use");
+        }
+
+        Proprietaire newOwner = new Proprietaire();
+        newOwner.setNom(dto.nom());
+        newOwner.setPrenom(dto.prenom());
+        newOwner.setEmail(dto.email());
+        newOwner.setTelephone(dto.telephone());
+
+        String encodedPassword = passwordEncoder.encode(dto.password());
+        newOwner.setPassword(encodedPassword);
+        return (Proprietaire) userRepository.save(newOwner);
     }
 }

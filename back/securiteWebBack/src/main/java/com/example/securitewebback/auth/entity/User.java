@@ -1,5 +1,6 @@
 package com.example.securitewebback.auth.entity;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -21,8 +22,8 @@ import lombok.Setter;
 @Getter
 @Setter
 
-public abstract class User {
-
+public abstract class User implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "BINARY(16)")

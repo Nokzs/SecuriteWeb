@@ -3,6 +3,7 @@ import { useSecureFetch } from "../../hooks/secureFetch";
 import type { Building } from "../building/buildingList";
 import { userStore } from "../../store/userStore";
 import { useState } from "react";
+import { useUploadFile } from "../../hooks/useUploadFile";
 
 type addBuildingPopUpProps = {
   setShowAddForm: React.Dispatch<React.SetStateAction<boolean>>;
@@ -20,12 +21,18 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
       setPreview(URL.createObjectURL(file));
     }
   };
-  const [newBuilding, setNewBuilding] = useState({ name: "", address: "" });
+  const [newBuilding, setNewBuilding] = useState({ name: "", adresse: "" });
   const user = userStore((s) => s.user);
   const queryClient = useQueryClient();
   const secureFetch = useSecureFetch();
+  const uploadFile = useUploadFile();
   const addBuilding = useMutation({
-    mutationFn: async (formData: Omit<Building, "id" | "syndicId">) => {
+    mutationFn: async (
+      formData: Omit<
+        Building,
+        "id" | "syndicId" | "totalTantieme" | "currentTantieme"
+      >,
+    ) => {
       const response = await secureFetch(`${API_URL}/building`, {
         body: JSON.stringify(formData),
         method: "POST",
@@ -41,11 +48,18 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
   const handleAddBuilding = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addBuilding.mutateAsync({
+      const data = {
         ...newBuilding,
         photoFilename: selectedFile ? selectedFile.name : null,
-      });
+      };
+      const building: Building = await addBuilding.mutateAsync(data);
+      if (selectedFile) {
+        const link = building.photoFilename;
+        if (!link) return;
+        uploadFile(selectedFile, link);
+      }
       setShowAddForm(false);
+      setSelectedFile(null);
     } catch (err: unknown) {
       if (err instanceof Error) {
         console.error("Erreur lors de l'ajout du bâtiment :", err.message);
@@ -71,7 +85,6 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
         </div>
 
         <form onSubmit={handleAddBuilding} className="space-y-4">
-          {/* Champ Nom */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Nom
@@ -87,7 +100,6 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
             />
           </div>
 
-          {/* Champ Adresse */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Adresse
@@ -95,15 +107,14 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
             <input
               className="w-full border border-slate-300 text-black p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               placeholder="123 rue de la Paix, Paris"
-              value={newBuilding.address}
+              value={newBuilding.adresse}
               onChange={(e) =>
-                setNewBuilding({ ...newBuilding, address: e.target.value })
+                setNewBuilding({ ...newBuilding, adresse: e.target.value })
               }
               required
             />
           </div>
 
-          {/* --- NOUVEAU : Zone Photo --- */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Photo de l'immeuble

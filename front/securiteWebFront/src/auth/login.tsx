@@ -8,9 +8,7 @@ import { userStore, type UserStoreType } from "../store/userStore";
 const API_URL = import.meta.env.VITE_APIURL;
 const loginSchema = z.object({
   email: z.string().min(1, { message: "L'email est requis" }),
-  password: z
-    .string()
-    .min(6, { message: "Le mot de passe doit contenir au moins 6 caractères" }),
+  password: z.string().min(1, { message: "Le mot de passe est requis" }),
 });
 type LoginFormValues = z.infer<typeof loginSchema>;
 export const Login = () => {
@@ -29,7 +27,7 @@ export const Login = () => {
       password: "",
     },
   });
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isError, error, reset } = useMutation({
     mutationFn: async (data: LoginFormValues) => {
       const formData = new URLSearchParams();
       formData.append("email", data.email);
@@ -44,24 +42,31 @@ export const Login = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Erreur de connexion");
+        let errorMessage = "Erreur de connexion";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+          throw(errorMessage);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_) {
+          
+                   errorMessage = `Erreur ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage); // C'est ce throw qui active isError
       }
-
       return response.json();
+    },
+    onError: (error: Error) => {
+      console.error("Erreur lors de la mutation de connexion :", error.message);
     },
   });
   const navigate = useNavigate();
   const onSubmit = async (data: LoginFormValues) => {
-    try {
-      const user = await mutateAsync(data);
-      setUser(user);
-      navigate(`${user.role}/dashboard`);
-    } catch (error) {
-      console.error("Erreur de connexion", error);
-    }
+    // On ne met pas de try/catch ici si on veut que useMutation garde l'état d'erreur
+    const user = await mutateAsync(data);
+    setUser(user);
+    navigate(`${user.role}/dashboard`);
   };
-
   return (
     <div className="flex justify-center items-center h-screen bg-slate-50">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-8 animate-in fade-in zoom-in-95 duration-300">
@@ -72,7 +77,11 @@ export const Login = () => {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          onChange={() => isError && reset()}
+          className="space-y-5"
+        >
           <div>
             <label
               htmlFor="email"
@@ -84,7 +93,7 @@ export const Login = () => {
               id="email"
               type="email"
               {...register("email")}
-              className={`w-full border p-3 rounded-xl outline-none transition-all ${
+              className={`w-full text-black border p-3 rounded-xl outline-none transition-all ${
                 errors.email
                   ? "border-red-400 focus:ring-2 focus:ring-red-100"
                   : "border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -155,8 +164,11 @@ export const Login = () => {
               "Se connecter"
             )}
           </button>
-
-          {/* Lien optionnel */}
+          {isError && (
+            <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-xl border border-red-200 animate-in slide-in-from-top-2">
+              <span className="font-bold">Erreur :</span> {error.message}
+            </div>
+          )}
           <p className="text-center text-sm text-slate-500 mt-6">
             Pas encore de compte ?{" "}
             <NavLink

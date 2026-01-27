@@ -24,7 +24,6 @@ public abstract class UserDto {
     private String telephone;
     private Role role;
 
-    // La méthode factory reste très propre
     public static UserDto fromEntity(User user) {
         if (user instanceof Syndic s) {
             return new SyndicDto(s);

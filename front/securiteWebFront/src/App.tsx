@@ -10,6 +10,7 @@ import { BuildingsList } from "./syndic/building/buildingList";
 import { PublicRoute } from "./auth/PublicRoute";
 import { RoleRoute } from "./auth/RoleRoute";
 import { AuthRoute } from "./auth/AuthRoute";
+import { ApartmentList } from "./syndic/apartments/component/apartmentsList";
 
 const routes = [
   {
@@ -45,11 +46,10 @@ const routes = [
               {
                 path: "building/:buildingId",
                 element: <BuildingLayoutSyndicDashboard />,
-
                 children: [
                   {
-                    path: "appartments",
-                    element: <>Apartments Syndic</>,
+                    path: "apartments",
+                    element: <ApartmentList />,
                   },
                   {
                     path: "residents",

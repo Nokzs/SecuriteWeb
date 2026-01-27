@@ -1,7 +1,9 @@
 package com.example.securitewebback.auth.controller;
 
 import java.io.IOException;
-import java.security.Principal;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -14,15 +16,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.securitewebback.auth.dto.CreateProprietaireDto;
 import com.example.securitewebback.auth.dto.CreateSyndicDto;
-import com.example.securitewebback.auth.dto.CreateUserDTO;
+import com.example.securitewebback.auth.entity.Proprietaire;
 import com.example.securitewebback.auth.entity.Syndic;
-import com.example.securitewebback.auth.entity.User;
 import com.example.securitewebback.auth.service.RegistrationService;
 import com.example.securitewebback.security.CustomUserDetails;
 
 import com.example.securitewebback.security.FormLoginSuccesHandler;
+import com.example.securitewebback.user.dto.ProprietaireDTO;
 import com.example.securitewebback.user.dto.UserDto;
+import com.example.securitewebback.user.repository.ProprietaireRepository;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,11 +60,9 @@ public class RegistrationController {
                 null,
                 userDetails.getAuthorities());
 
-        // 3. Création d'un nouveau contexte de sécurité
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
 
-        // 4. IMPORTANT : On informe le SecurityContextHolder
         SecurityContextHolder.setContext(context);
 
         // 5. CRUCIAL : Sauvegarde explicite dans la session (via le repository)
@@ -80,6 +82,13 @@ public class RegistrationController {
         // Méthode vide pour initialiser une session et obtenir un token CSRF
     }
 
+    @PreAuthorize("hasRole('SYNDIC')")
+    @PostMapping("/owner")
+    public ResponseEntity<ProprietaireDTO> createOwner(@RequestBody CreateProprietaireDto dto, Authentication auth) {
+        Proprietaire proprietaire = registrationService.registerProprietaire(dto);
+        ProprietaireDTO proprietaireDTO = (ProprietaireDTO) UserDto.fromEntity(proprietaire);
+        return ResponseEntity.ok(proprietaireDTO);
+    }
     /*
      * @GetMapping("user")
      * public UserDto getProfil(Authentication authentication) {
