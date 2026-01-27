@@ -58,8 +58,10 @@ export const Register = () => {
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       const user = await mutateAsync(data);
-      setToken(user.access);
-      navigate("/syndic", { replace: true });
+      if (user) {
+        setToken(user.access);
+        navigate("/syndic", { replace: true });
+      }
     } catch (error) {
       console.error("Erreur de connexion", error);
     }
