@@ -136,7 +136,11 @@ export const CreateOwnerForm = ({
           </div>
 
           <button
-            onClick={() => onSuccess(mutation.data)}
+            onClick={() => {
+              setCredentials(null);
+              onSuccess(mutation.data);
+              return;
+            }}
             className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-black transition-all shadow-lg"
           >
             J'ai noté le mot de passe
