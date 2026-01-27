@@ -12,7 +12,7 @@ const loginSchema = z.object({
 });
 type LoginFormValues = z.infer<typeof loginSchema>;
 export const Login = () => {
-  const setUser = userStore((s: UserStoreType) => s.setUser);
+  const setToken = userStore((s: UserStoreType) => s.setToken);
 
   const secureFetch = useSecureFetch();
   const {
@@ -64,8 +64,21 @@ export const Login = () => {
   const onSubmit = async (data: LoginFormValues) => {
     // On ne met pas de try/catch ici si on veut que useMutation garde l'état d'erreur
     const user = await mutateAsync(data);
-    setUser(user);
-    navigate(`${user.role}/dashboard`);
+    setToken(user.access);
+
+    if (user.access) {
+      const parsedUser = userStore.getState().get(user.access);
+      if (parsedUser?.role === "PROPRIETAIRE") {
+        navigate("/owner", { replace: true });
+        return;
+      }
+      if (parsedUser?.role === "SYNDIC") {
+        navigate("/syndic", { replace: true });
+        return;
+      }
+    }
+
+    navigate("/", { replace: true });
   };
   return (
     <div className="flex justify-center items-center h-screen bg-slate-50">

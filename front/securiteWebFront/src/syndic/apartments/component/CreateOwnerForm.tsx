@@ -147,11 +147,9 @@ export const CreateOwnerForm = ({
   }
 
   return (
-    /* Overlay qui centre le formulaire sur tout l'écran */
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        /* Suppression de 'absolute', ajout de 'relative' pour le positionnement interne */
         className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xl space-y-4 animate-in fade-in slide-in-from-bottom-4 w-full max-w-md relative"
       >
         <div className="flex justify-between items-center border-b pb-3">

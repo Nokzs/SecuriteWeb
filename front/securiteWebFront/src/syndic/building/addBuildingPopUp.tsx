@@ -23,6 +23,8 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
   };
   const [newBuilding, setNewBuilding] = useState({ name: "", adresse: "" });
   const user = userStore((s) => s.user);
+  const get = userStore((s) => s.get);
+  const parsedUser = user ? get(user) : null;
   const queryClient = useQueryClient();
   const secureFetch = useSecureFetch();
   const uploadFile = useUploadFile();
@@ -42,7 +44,7 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["buildings", user?.uuid] });
+      queryClient.invalidateQueries({ queryKey: ["buildings", parsedUser?.uuid] });
     },
   });
   const handleAddBuilding = async (e: React.FormEvent) => {
@@ -53,6 +55,7 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
         photoFilename: selectedFile ? selectedFile.name : null,
       };
       const building: Building = await addBuilding.mutateAsync(data);
+
       if (selectedFile) {
         const link = building.photoFilename;
         if (!link) return;

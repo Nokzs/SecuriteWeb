@@ -41,6 +41,9 @@ public abstract class User implements Serializable {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Column(nullable = false)
+    private boolean isFirstLogin = false;
+
     public User() {
     }
 
@@ -49,6 +52,7 @@ public abstract class User implements Serializable {
         this.password = password;
         this.role = role;
         this.telephone = telephone;
+        this.isFirstLogin = false;
     }
 
     public UUID getId() {
@@ -89,6 +93,14 @@ public abstract class User implements Serializable {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public boolean getIsFirstLogin() {
+        return isFirstLogin;
+    }
+
+    public void setIsFirstLogin(boolean isFirstLogin) {
+        this.isFirstLogin = isFirstLogin;
     }
 
 }
