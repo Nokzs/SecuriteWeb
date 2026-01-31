@@ -2,10 +2,9 @@ package com.example.securitewebback.security;
 
 import java.util.Arrays;
 import java.util.Collections;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
@@ -22,109 +22,121 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.example.securitewebback.security.SsoConfig.CustomTokenSuccessHandler;
+
+import org.springframework.http.MediaType;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final ConcreteUserDetailsService myUserDetailsService;
-    private final FormLoginSuccesHandler loginSuccessHandler;
+        private final ConcreteUserDetailsService myUserDetailsService;
 
-    public SecurityConfig(ConcreteUserDetailsService myUserDetailsService,
-                          FormLoginSuccesHandler loginSuccessHandler) {
-        this.myUserDetailsService = myUserDetailsService;
-        this.loginSuccessHandler = loginSuccessHandler;
-    }
+        public SecurityConfig(ConcreteUserDetailsService myUserDetailsService,
+                        FormLoginSuccesHandler loginSuccessHandler) {
+                this.myUserDetailsService = myUserDetailsService;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                // 1. Configuration du CORS
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        }
 
-                // 2. Configuration du CSRF (Double Cookie Submit Pattern)
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+        @Bean
+        @Order(1)
+        public SecurityFilterChain authServerSecurityFilterChain(HttpSecurity http) throws Exception {
+                OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
 
-                // Filtre pour forcer l'envoi du cookie CSRF à chaque requête
-                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+                http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
+                                .oidc(Customizer.withDefaults())
+                                .tokenEndpoint(tokenEndpoint -> tokenEndpoint
+                                                // Lecture du refresh token dans le cookie HttpOnly
+                                                .accessTokenRequestConverter(new OAuth2CookieRefreshTokenConverter())
+                                                // Injection du refresh token dans le cookie HttpOnly lors du succès
+                                                .accessTokenResponseHandler(new CustomTokenSuccessHandler()));
 
-                // 3. Gestion des accès non autorisés (API Style : renvoie 401 au lieu d'une page de login)
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                http.exceptionHandling(exceptions -> exceptions
+                                .defaultAuthenticationEntryPointFor(
+                                                new LoginUrlAuthenticationEntryPoint("/login"),
+                                                new MediaTypeRequestMatcher(MediaType.TEXT_HTML)));
 
-                // 4. Gestion de la session (Classique pour le mode Cookie/Session)
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                http.cors(Customizer.withDefaults());
 
-                // 5. Définition des règles de sécurité sur les URLs
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/syndics/**").permitAll()
-                        .requestMatchers("/error").permitAll() // <--- AJOUTE CECI
-                        .anyRequest().authenticated())
+                return http.build();
+        }
 
-                // 6. Configuration du Login (Form-data)
-                .formLogin(form -> form
-                        .usernameParameter("email")
-                        .loginProcessingUrl("/api/auth/login")
-                        .successHandler(this.loginSuccessHandler)
-                        .failureHandler((req, res, exp) -> {
-                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            res.setContentType("application/json");
-                            res.getWriter().write("{\"status\": \"ERROR\", \"message\": \"Identifiants invalides\"}");
-                        }))
+        @Bean
+        @Order(2)
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // 7. Configuration du Logout
-                .logout(logout -> logout
-                        .logoutUrl("/api/auth/logout")
-                        .logoutSuccessHandler((request, response, authentication) -> {
-                            response.setStatus(HttpServletResponse.SC_OK);
-                        })
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID", "XSRF-TOKEN")
-                        .clearAuthentication(true));
+                                .csrf(csrf -> csrf
+                                                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                                                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
 
-        return http.build();
-    }
+                                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
 
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(myUserDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
+                                .exceptionHandling(ex -> ex
+                                                .authenticationEntryPoint(
+                                                                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        // Autorise ton Front React
-        configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
-        // Méthodes HTTP autorisées
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        // Indispensable pour s'échanger les cookies (JSESSIONID / XSRF-TOKEN)
-        configuration.setAllowCredentials(true);
-        // Headers autorisés
-        configuration.setAllowedHeaders(Arrays.asList(
-                "Authorization",
-                "Content-Type",
-                "X-XSRF-TOKEN",
-                "Accept",
-                "X-Requested-With"
-        ));
-        // Headers exposés (pour que React puisse lire certains headers si besoin)
-        configuration.setExposedHeaders(Collections.singletonList("X-XSRF-TOKEN"));
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers("/api/syndics/**").permitAll()
+                                                .requestMatchers("/error").permitAll()
+                                                .anyRequest().authenticated())
+                                .oauth2ResourceServer(oauth2 -> oauth2
+                                                .jwt(Customizer.withDefaults()))
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+                                .logout(logout -> logout
+                                                .logoutUrl("/api/auth/logout")
+                                                .logoutSuccessHandler((request, response, authentication) -> {
+                                                        response.setStatus(HttpServletResponse.SC_OK);
+                                                })
+                                                .deleteCookies("XSRF-TOKEN")
+
+                return http.build();
+        }
+
+        @Bean
+        public DaoAuthenticationProvider authenticationProvider() {
+                DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+                authProvider.setUserDetailsService(myUserDetailsService);
+                authProvider.setPasswordEncoder(passwordEncoder());
+                return authProvider;
+        }
+
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
+
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration configuration = new CorsConfiguration();
+                // Autorise ton Front React
+                configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
+                // Méthodes HTTP autorisées
+                configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                // Indispensable pour s'échanger les cookies (JSESSIONID / XSRF-TOKEN)
+                configuration.setAllowCredentials(true);
+                // Headers autorisés
+                configuration.setAllowedHeaders(Arrays.asList(
+                                "Authorization",
+                                "Content-Type",
+                                "X-XSRF-TOKEN",
+                                "Accept",
+                                "X-Requested-With"));
+                // Headers exposés (pour que React puisse lire certains headers si besoin)
+                configuration.setExposedHeaders(Collections.singletonList("X-XSRF-TOKEN"));
+
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", configuration);
+                return source;
+        }
 }
