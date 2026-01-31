@@ -13,6 +13,7 @@ import { AuthRoute } from "./auth/AuthRoute";
 import { ApartmentList } from "./syndic/apartments/component/apartmentsList";
 import { Home } from "./public/home";
 import { FirstOwnerLogin } from "./owner/FirstOwnerLogin";
+import Callback from "./auth/sso/callback";
 
 const routes = [
   {
@@ -27,6 +28,10 @@ const routes = [
       {
         path: "/login",
         element: <Login />,
+      },
+      {
+        path: "/callback",
+        element: <Callback />,
       },
       {
         path: "/register",

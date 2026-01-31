@@ -4,100 +4,78 @@ import java.security.KeyPairGenerator;
 
 import com.example.securitewebback.auth.entity.User;
 import com.example.securitewebback.security.CustomUserDetails;
-import com.google.common.net.HttpHeaders;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.ResponseCookie;
 
-import java.io.IOException;
 import java.security.KeyPair;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+
+import org.springframework.security.oauth2.core.OAuth2Token;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
-import org.springframework.security.oauth2.core.endpoint.OAuth2AccessTokenResponse;
-import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
-import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AccessTokenAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
+import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.security.oauth2.server.authorization.token.DelegatingOAuth2TokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.JwtGenerator;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-
 @Configuration
 public class AuthorizationServerConfig {
 
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
-        RegisteredClient frontendClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                .clientId("frontend-app")
-                .clientSecret("{noop}secret")
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .redirectUri("http://localhost:3000/authorized")
-                .scope(OidcScopes.OPENID)
-                .tokenSettings(TokenSettings.builder()
-                        .accessTokenTimeToLive(Duration.ofMinutes(15))
-                        .refreshTokenTimeToLive(Duration.ofDays(30))
-                        .reuseRefreshTokens(false)
-                        .build())
+        TokenSettings tokenSettings = TokenSettings.builder()
+                .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
+                .accessTokenTimeToLive(Duration.of(15, ChronoUnit.MINUTES))
+                .refreshTokenTimeToLive(Duration.of(30, ChronoUnit.DAYS))
+                .idTokenSignatureAlgorithm(SignatureAlgorithm.RS256)
+                .reuseRefreshTokens(false)
                 .build();
 
-        return new InMemoryRegisteredClientRepository(frontendClient);
-    }
+        RegisteredClient reactClient = RegisteredClient.withId("react-client")
+                .clientId("react-client")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                .redirectUri("http://127.0.0.1:3000/callback")
+                .postLogoutRedirectUri("http://127.0.0.1:3000/")
+                .scope(OidcScopes.OPENID)
+                .scope(OidcScopes.PROFILE)
+                .scope("offline_access")
+                .clientSettings(ClientSettings.builder()
+                        .requireProofKey(true)
+                        .build())
+                .tokenSettings(tokenSettings)
+                .build();
 
-    private final OAuth2AccessTokenResponseHttpMessageConverter tokenHttpResponseConverter = new OAuth2AccessTokenResponseHttpMessageConverter();
-
-    @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-            Authentication authentication) throws IOException {
-        OAuth2AccessTokenAuthenticationToken accessTokenAuthentication = (OAuth2AccessTokenAuthenticationToken) authentication;
-
-        OAuth2AccessToken accessToken = accessTokenAuthentication.getAccessToken();
-        OAuth2AccessTokenResponse.Builder builder = OAuth2AccessTokenResponse.withToken(accessToken.getTokenValue())
-                .tokenType(accessToken.getTokenType())
-                .scopes(accessToken.getScopes());
-
-        if (accessTokenAuthentication.getRefreshToken() != null) {
-            String refreshToken = accessTokenAuthentication.getRefreshToken().getTokenValue();
-            builder.refreshToken(refreshToken);
-
-            // Création du cookie HttpOnly
-            ResponseCookie cookie = ResponseCookie.from("refresh_token", refreshToken)
-                    .httpOnly(true)
-                    .secure(true) // En dev (http), mets à false ou utilise un tunnel SSL
-                    .path("/oauth2/token")
-                    .maxAge(Duration.ofDays(30))
-                    .sameSite("Lax") // "Strict" peut poser problème si le front et le SSO sont sur des domaines
-                                     // différents
-                    .build();
-
-            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-        }
-
-        OAuth2AccessTokenResponse accessTokenResponse = builder.build();
-        ServletServerHttpResponse httpResponse = new ServletServerHttpResponse(response);
-
-        // Cette ligne écrit le JSON (Access Token) dans le corps de la réponse
-        this.tokenHttpResponseConverter.write(accessTokenResponse, null, httpResponse);
+        return new InMemoryRegisteredClientRepository(reactClient);
     }
 
     @Bean
@@ -126,17 +104,42 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
+    public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
+        return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
+    }
+
+    @Bean
+    public OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator(JWKSource<SecurityContext> jwkSource,
+            OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer) {
+        JwtEncoder jwtEncoder = new NimbusJwtEncoder(jwkSource);
+        JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
+        jwtGenerator.setJwtCustomizer(tokenCustomizer);
+
+        OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
+
+        OAuth2PublicClientRefreshTokenGenerator refreshTokenGenerator = new OAuth2PublicClientRefreshTokenGenerator();
+
+        return new DelegatingOAuth2TokenGenerator(jwtGenerator, accessTokenGenerator, refreshTokenGenerator);
+    }
+
+    @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> tokenCustomizer() {
         return context -> {
+            Authentication principal = context.getPrincipal();
+            CustomUserDetails user = (CustomUserDetails) principal.getPrincipal();
+            User realUser = user.getUser();
+
+            context.getClaims().claims(claims -> {
+                // Ces claims iront dans l'Access Token ET l'ID Token
+                claims.put("role", realUser.getRole());
+                claims.put("uuid", user.getUuid());
+                claims.put("email", realUser.getEmail()); // Ton champ mail
+
+                claims.put("sub", realUser.getEmail());
+            });
+
             if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
-                Authentication principal = context.getPrincipal();
-                CustomUserDetails user = (CustomUserDetails) principal.getPrincipal();
-                User realUser = user.getUser();
-                context.getClaims().claims(claims -> {
-                    claims.put("role", realUser.getRole());
-                    claims.put("isFirstTime", realUser.getIsFirstLogin());
-                    claims.put("uuid", user.getUuid());
-                });
+                context.getClaims().claim("isFirstLogin", realUser.getIsFirstLogin());
             }
         };
     }
