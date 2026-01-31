@@ -1,50 +1,75 @@
 import Cookies from "js-cookie";
 import { useCallback } from "react";
 
+import { refreshAccessToken } from "../auth/sso/ssoAuthService";
+import { TOKEN_ENDPOINT } from "../config/urls";
+import { userStore } from "../store/userStore";
+
+let refreshPromise: Promise<string> | null = null;
+
+const waitForRefresh = async () => {
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+};
+
 export const useSecureFetch = () => {
-  // On type 'options' avec RequestInit pour avoir l'autocomplétion native de fetch
-  const secureFetch = useCallback(
-    async (url: string, options: RequestInit = {}) => {
-      // Initialisation des headers de manière sécurisée pour TypeScript
-      const headers = new Headers(options.headers);
+  const secureFetch = useCallback(async (url: string, options: RequestInit = {}) => {
+    const headers = new Headers(options.headers);
 
-      // On définit le Content-Type par défaut s'il n'existe pas déjà
-      if (!headers.has("Content-Type")) {
-        headers.set("Content-Type", "application/json");
-      }
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
 
-      const defaultOptions: RequestInit = {
-        ...options,
-        credentials: "include",
-        headers: headers,
-      };
+    const token = userStore.getState().user;
+    if (token && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
 
-      // 2. Récupération du token CSRF
-      const csrfToken = Cookies.get("XSRF-TOKEN");
-      // 3. Ajout du header CSRF pour les méthodes de mutation
-      const method = options.method?.toUpperCase() || "GET";
-      const isMutation = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
+    const defaultOptions: RequestInit = {
+      ...options,
+      credentials: "include",
+      headers,
+    };
 
-      if (isMutation && csrfToken) {
-        // Utiliser l'objet Headers est plus propre que de manipuler un objet litéral
-        (defaultOptions.headers as Headers).set("X-XSRF-TOKEN", csrfToken);
-      }
+    const csrfToken = Cookies.get("XSRF-TOKEN");
+    const method = options.method?.toUpperCase() || "GET";
+    const isMutation = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
 
-      try {
-        const response = await fetch(url, defaultOptions);
+    if (isMutation && csrfToken) {
+      headers.set("X-XSRF-TOKEN", csrfToken);
+    }
 
+    const doFetch = async () => fetch(url, defaultOptions);
+
+    try {
+      const response = await doFetch();
+
+      if (response.status !== 401) {
         if (response.status === 403) {
           console.error("Erreur CSRF ou accès refusé (403)");
         }
-
         return response;
-      } catch (error) {
-        console.error("Erreur réseau :", error);
-        throw error;
       }
-    },
-    [],
-  );
+
+      if (url.startsWith(TOKEN_ENDPOINT)) {
+        return response;
+      }
+
+      const newAccessToken = await waitForRefresh();
+      headers.set("Authorization", `Bearer ${newAccessToken}`);
+
+      return await doFetch();
+    } catch (error) {
+      userStore.getState().clearUser();
+      window.location.assign("/login");
+      throw error;
+    }
+  }, []);
 
   return secureFetch;
 };

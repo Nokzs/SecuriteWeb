@@ -61,24 +61,27 @@ public class RegistrationController {
         // 1. Création de l'utilisateur en base de données
         Syndic user = registrationService.registerSyndic(dto);
 
-        CustomUserDetails userDetails = new CustomUserDetails(user);
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                userDetails,
-                null,
-                userDetails.getAuthorities());
-
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(auth);
-
-        SecurityContextHolder.setContext(context);
-
-        securityContextRepository.saveContext(context, request, response);
-
-        try {
-            successHandler.onAuthenticationSuccess(request, response, auth);
-        } catch (IOException e) {
-            throw new RuntimeException("Erreur lors de la finalisation de l'inscription", e);
-        }
+        /*
+         * CustomUserDetails userDetails = new CustomUserDetails(user);
+         * Authentication auth = new UsernamePasswordAuthenticationToken(
+         * userDetails,
+         * null,
+         * userDetails.getAuthorities());
+         * 
+         * SecurityContext context = SecurityContextHolder.createEmptyContext();
+         * context.setAuthentication(auth);
+         * 
+         * SecurityContextHolder.setContext(context);
+         * 
+         * securityContextRepository.saveContext(context, request, response);
+         * 
+         * try {
+         * successHandler.onAuthenticationSuccess(request, response, auth);
+         * } catch (IOException e) {
+         * throw new RuntimeException("Erreur lors de la finalisation de l'inscription",
+         * e);
+         * }
+         */
     }
 
     @GetMapping("/csrf")
