@@ -75,6 +75,7 @@ public class AuthorizationServerConfig {
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
+                .scope("email")
                 .scope("offline_access")
                 .clientSettings(ClientSettings.builder()
                         .requireProofKey(false)
@@ -165,11 +166,10 @@ public class AuthorizationServerConfig {
             context.getClaims().claims(claims -> {
                 // Ces claims iront dans l'Access Token ET l'ID Token
                 claims.put("role", realUser.getRole());
-                claims.put("uuid", user.getUuid());
                 claims.put("email", realUser.getEmail()); // Ton champ mail
 
+                // "sub" doit 5tre un identifiant stable (UUID) pour le Resource Server
                 claims.put("sub", realUser.getId().toString());
-
             });
 
             if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {

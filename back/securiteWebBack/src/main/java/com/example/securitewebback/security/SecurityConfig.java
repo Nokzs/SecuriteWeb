@@ -18,10 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
 
-import com.example.securitewebback.security.SsoConfig.CustomTokenSuccessHandler;
 import com.example.securitewebback.security.SsoConfig.JwtToUserConverter;
-import com.example.securitewebback.security.SsoConfig.OAuth2CookieRefreshTokenConverter;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
@@ -37,23 +34,18 @@ import jakarta.servlet.http.HttpServletResponse;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-                                                                 private final ConcreteUserDetailsService myUserDetailsService;
-                                                                  private final CustomTokenSuccessHandler customTokenSuccessHandler;
-                                                                  private final RegisteredClientRepository registeredClientRepository;
-                                                                  private final JwtToUserConverter jwtToUserConverter;
+                                                                   private final ConcreteUserDetailsService myUserDetailsService;
+                                                                   private final JwtToUserConverter jwtToUserConverter;
   
-                                                                  public SecurityConfig(ConcreteUserDetailsService myUserDetailsService,
-                                                                                                                                                                                                  FormLoginSuccesHandler loginSuccessHandler,
-                                                                                                                                                                                                  CustomTokenSuccessHandler customTokenSuccessHandler,
-                                                                                                                                                                                                  RegisteredClientRepository registeredClientRepository,
-                                                                                                                                                                                                  JwtToUserConverter jwtToUserConverter) {
-                                                                                                                                  this.myUserDetailsService = myUserDetailsService;
-                                                                                                                                  this.customTokenSuccessHandler = customTokenSuccessHandler;
-                                                                                                                                  this.registeredClientRepository = registeredClientRepository;
-                                                                                                                                  this.jwtToUserConverter = jwtToUserConverter;
+                                                                   public SecurityConfig(ConcreteUserDetailsService myUserDetailsService,
+                                                                                                                                                                                                   FormLoginSuccesHandler loginSuccessHandler,
+                                                                                                                                                                                                   JwtToUserConverter jwtToUserConverter) {
+                                                                                                                                   this.myUserDetailsService = myUserDetailsService;
+                                                                                                                                   this.jwtToUserConverter = jwtToUserConverter;
 
 
-                                                                }
+                                                                 }
+
 
                                                                 @Bean
                                                                 @Order(1)
@@ -71,12 +63,9 @@ public class SecurityConfig {
                                                                                                                                                                                                                                                                 authorizationServerEndpointsMatcher,
                                                                                                                                                                                                                                                                 request -> "/login".equals(request.getServletPath())));
 
-                                                                                                                                  authorizationServerConfigurer
-                                                                                                                                                                                                                                                                  .oidc(Customizer.withDefaults())
+                                                                                                                                   authorizationServerConfigurer
+                                                                                                                                                                                                                                                                   .oidc(Customizer.withDefaults());
 
-                                                                                                                                                                                                                                                                  .tokenEndpoint(tokenEndpoint -> tokenEndpoint
-                                                                                                                                                                                                                                                                                                                                                                                                  .accessTokenRequestConverter(new OAuth2CookieRefreshTokenConverter())
-                                                                                                                                                                                                                                                                                                                                                                                                  .accessTokenResponseHandler(customTokenSuccessHandler));
 
 
                                                                                                                                  http
@@ -122,8 +111,9 @@ public class SecurityConfig {
                                                                                                                                                                                                                                                                                                                                                                                                    .anyRequest()
                                                                                                                                                                                                                                                                                                                                                                                                    .authenticated())
 
-                                                                                                                                   .oauth2ResourceServer(oauth2 -> oauth2
-                                                                                                                                                                                                                                                                       .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationTokenConverter())))
+                                                                                                                                    .oauth2ResourceServer(oauth2 -> oauth2
+                                                                                                                                                                                                                                                                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtToUserConverter)))
+
 
                                                                                                                                                                                                                                                                   .logout(logout -> logout
                                                                                                                                                                                                                                                                                                                                                                                                   .logoutUrl("/api/auth/logout")

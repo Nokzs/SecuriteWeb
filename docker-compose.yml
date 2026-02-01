@@ -82,8 +82,9 @@ services:
       - AUTH_ISSUER=${AUTH_ISSUER:-http://auth.local:8080}
       - OAUTH2_GATEWAY_CLIENT_ID=${OAUTH2_GATEWAY_CLIENT_ID:-${OAUTH2_CLIENT_ID:-gateway-client}}
       - OAUTH2_GATEWAY_CLIENT_SECRET=${OAUTH2_GATEWAY_CLIENT_SECRET:-${OAUTH2_CLIENT_SECRET:-secret-secret}}
-      - GATEWAY_PUBLIC_BASE_URL=${GATEWAY_PUBLIC_BASE_URL:-http://localhost:8082}
-      - OAUTH2_GATEWAY_REDIRECT_URIS=${OAUTH2_GATEWAY_REDIRECT_URIS:-${GATEWAY_PUBLIC_BASE_URL}/login/oauth2/code/${OAUTH2_CLIENT_ID:-gateway-client}}
+      - GATEWAY_PORT=${GATEWAY_PORT:-8082}
+      - GATEWAY_PUBLIC_BASE_URL=${GATEWAY_PUBLIC_BASE_URL:-http://localhost:${GATEWAY_PORT}}
+      - OAUTH2_GATEWAY_REDIRECT_URIS=${OAUTH2_GATEWAY_REDIRECT_URIS:-http://localhost:${GATEWAY_PORT}/login/oauth2/code/${OAUTH2_CLIENT_ID:-gateway-client}}
       - OAUTH2_POST_LOGOUT_REDIRECT_URIS=${OAUTH2_POST_LOGOUT_REDIRECT_URIS:-http://localhost:3000/}
         # adresse ip du minio
       - MINIO_INTERNAL_URL=http://minio:9000
@@ -112,9 +113,10 @@ services:
       - APPA_BASE_URI=${APPA_BASE_URI:-http://backend:8080}
       - APPA_PATH_PREFIX=${APPA_PATH_PREFIX:-appA}
       - MONOLITH_BASE_URI=${MONOLITH_BASE_URI:-http://backend:8080}
-      - FRONT_PUBLIC_BASE_URL=${FRONT_PUBLIC_BASE_URL:-http://localhost:3000}
-      - APP_REDIRECT_DEFAULT=${APP_REDIRECT_DEFAULT:-${FRONT_PUBLIC_BASE_URL}/}
-      - APP_REDIRECT_APPA=${APP_REDIRECT_APPA:-${FRONT_PUBLIC_BASE_URL}/}
+      - FRONT_PORT=${FRONT_PORT:-3000}
+      - FRONT_PUBLIC_BASE_URL=${FRONT_PUBLIC_BASE_URL:-http://localhost:${FRONT_PORT}}
+      - APP_REDIRECT_DEFAULT=${APP_REDIRECT_DEFAULT:-http://localhost:${FRONT_PORT}/}
+      - APP_REDIRECT_APPA=${APP_REDIRECT_APPA:-http://localhost:${FRONT_PORT}/}
       - APP_REDIRECT_APPB=${APP_REDIRECT_APPB:-http://localhost:3001/}
       # The issuer must be browser-reachable, but the gateway container must also reach it.
       # Use host.docker.internal (mapped to host-gateway) so the container can call the host-published port 8080.
@@ -134,9 +136,8 @@ services:
     ports:
       - "${FRONT_PORT:-3000}:5173"
     environment:
-      - GATEWAY_PUBLIC_BASE_URL=${GATEWAY_PUBLIC_BASE_URL:-http://localhost:8082}
-      - VITE_APIURL=${VITE_APIURL:-${GATEWAY_PUBLIC_BASE_URL}/appA/api}
-      - VITE_GATEWAY_BASE=${VITE_GATEWAY_BASE:-${GATEWAY_PUBLIC_BASE_URL}}
+      - VITE_GATEWAY_BASE=${VITE_GATEWAY_BASE:-http://localhost:8082}
+      - VITE_APIURL=${VITE_APIURL:-http://localhost:8082/appA/api}
     command: sh -c "npm install && npm run dev -- --host"
     depends_on:
       - gateway

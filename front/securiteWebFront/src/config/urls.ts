@@ -17,7 +17,9 @@ export const GATEWAY_BASE = required(
   import.meta.env.VITE_GATEWAY_BASE,
 );
 
-export const LOGIN_URL = `${GATEWAY_BASE}/login?app=appA`;
+export const APP_NAME = import.meta.env.VITE_APP_NAME ?? "appA";
+
+export const LOGIN_URL = `${GATEWAY_BASE}/login?app=${APP_NAME}`;
 
 export const CLIENT_ID = required(
   "VITE_CLIENT_ID",

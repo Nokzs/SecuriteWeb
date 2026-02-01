@@ -18,61 +18,58 @@ const waitForRefresh = async () => {
 };
 
 export const useSecureFetch = () => {
-  const secureFetch = useCallback(
-    async (url: string, options: RequestInit = {}) => {
-      const headers = new Headers(options.headers);
+  const secureFetch = useCallback(async (url: string, options: RequestInit = {}) => {
+    const headers = new Headers(options.headers);
 
-      if (!headers.has("Content-Type")) {
-        headers.set("Content-Type", "application/json");
-      }
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
 
-      const token = userStore.getState().user;
-      if (token && !headers.has("Authorization")) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
+    const token = userStore.getState().user;
+    if (token && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
 
-      const defaultOptions: RequestInit = {
-        ...options,
-        credentials: "include",
-        headers,
-      };
+    const defaultOptions: RequestInit = {
+      ...options,
+      credentials: "include",
+      headers,
+    };
 
-      const csrfToken = Cookies.get("XSRF-TOKEN");
-      const method = options.method?.toUpperCase() || "GET";
-      const isMutation = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
+    const csrfToken = Cookies.get("XSRF-TOKEN");
+    const method = options.method?.toUpperCase() || "GET";
+    const isMutation = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
 
-      if (isMutation && csrfToken) {
-        headers.set("X-XSRF-TOKEN", csrfToken);
-      }
+    if (isMutation && csrfToken) {
+      headers.set("X-XSRF-TOKEN", csrfToken);
+    }
 
-      const doFetch = async () => fetch(url, defaultOptions);
+    const doFetch = async () => fetch(url, defaultOptions);
 
-      try {
-        const response = await doFetch();
+    try {
+      const response = await doFetch();
 
-        if (response.status !== 401) {
-          if (response.status === 403) {
-            console.error("Erreur CSRF ou accès refusé (403)");
-          }
-          return response;
+      if (response.status !== 401) {
+        if (response.status === 403) {
+          console.error("Erreur CSRF ou accès refusé (403)");
         }
-
-        if (url.startsWith(TOKEN_ENDPOINT)) {
-          return response;
-        }
-
-        const newAccessToken = await waitForRefresh();
-        headers.set("Authorization", `Bearer ${newAccessToken}`);
-
-        return await doFetch();
-      } catch (error) {
-        userStore.getState().clearUser();
-        window.location.assign("/login");
-        throw error;
+        return response;
       }
-    },
-    [],
-  );
+
+      if (url.startsWith(TOKEN_ENDPOINT)) {
+        return response;
+      }
+
+      const newAccessToken = await waitForRefresh();
+      headers.set("Authorization", `Bearer ${newAccessToken}`);
+
+      return await doFetch();
+    } catch (error) {
+      userStore.getState().clearUser();
+      window.location.assign("/login");
+      throw error;
+    }
+  }, []);
 
   return secureFetch;
 };
