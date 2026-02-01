@@ -25,10 +25,15 @@ public class JwtToUserConverter implements Converter<Jwt, AbstractAuthentication
 
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
-        String email = jwt.getSubject();
+        String userUuid = jwt.getSubject();
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        User user;
+        try {
+            user = userRepository.findById(java.util.UUID.fromString(userUuid))
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found for sub=" + userUuid));
+        } catch (IllegalArgumentException ex) {
+            throw new UsernameNotFoundException("Invalid sub claim (expected UUID): " + userUuid, ex);
+        }
 
         CustomUserDetails userDetails = new CustomUserDetails(user);
 

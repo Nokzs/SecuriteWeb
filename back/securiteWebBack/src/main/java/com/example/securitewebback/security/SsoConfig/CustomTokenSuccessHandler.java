@@ -14,7 +14,11 @@ import org.springframework.http.server.ServletServerHttpResponse;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class CustomTokenSuccessHandler implements AuthenticationSuccessHandler {
 
         private final OAuth2AccessTokenResponseHttpMessageConverter tokenHttpResponseConverter = new OAuth2AccessTokenResponseHttpMessageConverter();
@@ -43,6 +47,11 @@ public class CustomTokenSuccessHandler implements AuthenticationSuccessHandler {
                                         .build();
 
                         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+                }
+
+                Object idToken = accessTokenAuthentication.getAdditionalParameters().get("id_token");
+                if (idToken != null) {
+                        builder.additionalParameters(Map.of("id_token", idToken));
                 }
 
                 OAuth2AccessTokenResponse accessTokenResponse = builder.build();

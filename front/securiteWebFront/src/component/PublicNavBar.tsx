@@ -16,12 +16,18 @@ export function PublicNavBar() {
         </Link>
 
         <div className="hidden md:flex gap-6">
-          <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium transition">
+          <Link
+            to="/"
+            className="text-gray-700 hover:text-blue-600 font-medium transition"
+          >
             Accueil
           </Link>
-          <Link to="/login" className="text-gray-700 hover:text-blue-600 font-medium transition">
+          <a
+            href={`${import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082"}/login?app=appA`}
+            className="text-gray-700 hover:text-blue-600 font-medium transition"
+          >
             Connexion
-          </Link>
+          </a>
           <Link
             to="/register"
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium"
@@ -47,13 +53,13 @@ export function PublicNavBar() {
               >
                 Accueil
               </Link>
-              <Link
-                to="/login"
+              <a
+                href={`${import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082"}/login?app=appA`}
                 className="text-gray-700 hover:text-blue-600 font-medium transition py-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Connexion
-              </Link>
+              </a>
               <Link
                 to="/register"
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-center"

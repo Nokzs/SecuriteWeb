@@ -44,8 +44,7 @@ import org.springframework.security.oauth2.server.authorization.token.JwtGenerat
 import org.springframework.security.oauth2.server.authorization.token.OAuth2AccessTokenGenerator;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenGenerator;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+
 @Configuration
 public class AuthorizationServerConfig {
 
@@ -59,23 +58,57 @@ public class AuthorizationServerConfig {
                 .reuseRefreshTokens(false)
                 .build();
 
-        RegisteredClient reactClient = RegisteredClient.withId("react-client")
-                .clientId("react-client")
-                .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
+        String clientId = getEnvOrDefault("OAUTH2_GATEWAY_CLIENT_ID", "gateway-client");
+        String clientSecret = getEnvOrDefault("OAUTH2_GATEWAY_CLIENT_SECRET", "secret-secret");
+        String redirectUrisCsv = getEnvOrDefault(
+                "OAUTH2_GATEWAY_REDIRECT_URIS",
+                "http://localhost:8082/login/oauth2/code/gateway-client");
+        String postLogoutRedirectUrisCsv = getEnvOrDefault(
+                "OAUTH2_POST_LOGOUT_REDIRECT_URIS",
+                "http://localhost:3000/");
+
+        RegisteredClient.Builder gatewayClientBuilder = RegisteredClient.withId(clientId)
+                .clientId(clientId)
+                .clientSecret("{noop}" + clientSecret)
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .redirectUri("http://127.0.0.1:3000/callback")
-                .postLogoutRedirectUri("http://127.0.0.1:3000/")
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
                 .scope("offline_access")
                 .clientSettings(ClientSettings.builder()
-                        .requireProofKey(true)
+                        .requireProofKey(false)
                         .build())
-                .tokenSettings(tokenSettings)
-                .build();
+                .tokenSettings(tokenSettings);
 
-        return new InMemoryRegisteredClientRepository(reactClient);
+        for (String uri : splitCsv(redirectUrisCsv)) {
+            gatewayClientBuilder.redirectUri(uri);
+        }
+        for (String uri : splitCsv(postLogoutRedirectUrisCsv)) {
+            gatewayClientBuilder.postLogoutRedirectUri(uri);
+        }
+
+        RegisteredClient gatewayClient = gatewayClientBuilder.build();
+
+        return new InMemoryRegisteredClientRepository(gatewayClient);
+    }
+
+    private static String getEnvOrDefault(String key, String defaultValue) {
+        String value = System.getenv(key);
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        return value;
+    }
+
+    private static String[] splitCsv(String csv) {
+        if (csv == null || csv.isBlank()) {
+            return new String[0];
+        }
+        return java.util.Arrays.stream(csv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .toArray(String[]::new);
     }
 
     @Bean
@@ -117,7 +150,7 @@ public class AuthorizationServerConfig {
 
         OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
 
-        OAuth2PublicClientRefreshTokenGenerator refreshTokenGenerator = new OAuth2PublicClientRefreshTokenGenerator();
+        org.springframework.security.oauth2.server.authorization.token.OAuth2RefreshTokenGenerator refreshTokenGenerator = new org.springframework.security.oauth2.server.authorization.token.OAuth2RefreshTokenGenerator();
 
         return new DelegatingOAuth2TokenGenerator(jwtGenerator, accessTokenGenerator, refreshTokenGenerator);
     }
@@ -135,7 +168,8 @@ public class AuthorizationServerConfig {
                 claims.put("uuid", user.getUuid());
                 claims.put("email", realUser.getEmail()); // Ton champ mail
 
-                claims.put("sub", realUser.getEmail());
+                claims.put("sub", realUser.getId().toString());
+
             });
 
             if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
@@ -144,14 +178,4 @@ public class AuthorizationServerConfig {
         };
     }
 
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        grantedAuthoritiesConverter.setAuthoritiesClaimName("role");
-        grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
-
-        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
-        return jwtAuthenticationConverter;
-    }
 }

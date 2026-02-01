@@ -19,53 +19,7 @@ const Callback = () => {
     authService
       .completeLogin()
       .then(async (oidcUser) => {
-        if (!oidcUser?.access_token) {
-          throw new Error("Access token missing from callback");
-        }
-        console.log("Callback successful, access token obtained.");
-        userStore.getState().setToken(oidcUser.access_token);
-
-        let parsedUser = userStore.getState().get(oidcUser.access_token);
-
-        if (!parsedUser) {
-          // Tentative via `id_token` (souvent JWT) sinon via `/userinfo`.
-          if (oidcUser.id_token) {
-            parsedUser = userStore.getState().get(oidcUser.id_token);
-          }
-        }
-
-        let role = parsedUser?.role;
-        let isFirstLogin = parsedUser?.isFirstLogin;
-
-        if (!role) {
-          const userInfo = (await fetchUserInfo(oidcUser.access_token)) as {
-            role?: string;
-            isFirstLogin?: boolean;
-            isFirstTime?: boolean;
-            uuid?: string;
-          };
-
-          role = userInfo.role;
-          // compat backend: `isFirstTime` vs `isFirstLogin`
-          isFirstLogin = userInfo.isFirstLogin ?? userInfo.isFirstTime;
-        }
-
-        if (role === "SYNDIC") {
-          navigate("/syndic", { replace: true });
-          return;
-        }
-
-        if (role === "PROPRIETAIRE") {
-          if (isFirstLogin) {
-            navigate("/owner/first-login", { replace: true });
-            return;
-          }
-
-          navigate("/owner", { replace: true });
-          return;
-        }
-
-        navigate("/", { replace: true });
+        console.log("Callback OIDC User :", oidcUser);
       })
       .catch((err) => {
         console.error("Échec de la validation du callback :", err);

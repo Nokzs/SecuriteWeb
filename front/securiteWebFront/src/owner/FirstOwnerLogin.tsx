@@ -3,10 +3,9 @@ import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import * as z from "zod";
+import { API_BASE } from "../config/urls";
 import { useSecureFetch } from "../hooks/secureFetch";
 import { userStore } from "../store/userStore";
-
-const API_URL = import.meta.env.VITE_APIURL;
 
 const changePasswordSchema = z
   .object({
@@ -17,10 +16,7 @@ const changePasswordSchema = z
       .regex(/[A-Z]/, "Il faut au moins une majuscule")
       .regex(/[a-z]/, "Il faut au moins une minuscule")
       .regex(/[0-9]/, "Il faut au moins un chiffre")
-      .regex(
-        /[@$!%*?&]/,
-        "Il faut au moins un caractère spécial (@$!%*?&)",
-      ),
+      .regex(/[@$!%*?&]/, "Il faut au moins un caractère spécial (@$!%*?&)"),
     confirmPassword: z.string().min(1, "Veuillez confirmer le mot de passe"),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -33,7 +29,6 @@ type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 export function FirstOwnerLogin() {
   const user = userStore((s) => s.user);
   const get = userStore((s) => s.get);
-  const setToken = userStore((s) => s.setToken);
   const parsedUser = user ? get(user) : null;
 
   const secureFetch = useSecureFetch();
@@ -51,7 +46,7 @@ export function FirstOwnerLogin() {
 
   const { mutateAsync, isError, error } = useMutation({
     mutationFn: async (data: ChangePasswordFormValues) => {
-      const response = await secureFetch(`${API_URL}/auth/change-password`, {
+      const response = await secureFetch(`${API_BASE}/auth/change-password`, {
         method: "POST",
         body: JSON.stringify({ newPassword: data.password }),
       });
@@ -72,11 +67,7 @@ export function FirstOwnerLogin() {
   });
 
   const onSubmit = async (data: ChangePasswordFormValues) => {
-    const result = await mutateAsync(data);
-
-    if (result?.access) {
-      setToken(result.access);
-    }
+    await mutateAsync(data);
 
     navigate("/owner", { replace: true });
   };
@@ -116,7 +107,9 @@ export function FirstOwnerLogin() {
               placeholder="••••••••"
             />
             {errors.password && (
-              <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
+              <p className="mt-1 text-xs text-red-500">
+                {errors.password.message}
+              </p>
             )}
           </div>
 

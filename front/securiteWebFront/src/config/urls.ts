@@ -12,6 +12,13 @@ export const AUTHORITY = required(
 
 export const API_BASE = required("VITE_APIURL", import.meta.env.VITE_APIURL);
 
+export const GATEWAY_BASE = required(
+  "VITE_GATEWAY_BASE",
+  import.meta.env.VITE_GATEWAY_BASE,
+);
+
+export const LOGIN_URL = `${GATEWAY_BASE}/login?app=appA`;
+
 export const CLIENT_ID = required(
   "VITE_CLIENT_ID",
   import.meta.env.VITE_CLIENT_ID,
