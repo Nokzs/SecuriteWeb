@@ -18,7 +18,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "users")
-@Inheritance(strategy = InheritanceType.JOINED) // Crée une table par enfant liée à celle-ci
+@Inheritance(strategy = InheritanceType.JOINED)
 @Getter
 @Setter
 

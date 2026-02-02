@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.example.securitewebback.appartements.entity.Apartment;
 import com.example.securitewebback.appartements.repository.ApartmentRepository;
+import com.example.securitewebback.auth.entity.Role;
 import com.example.securitewebback.building.entity.Building;
 import com.example.securitewebback.building.repository.BuildingRepository;
 
@@ -50,42 +51,20 @@ public class ApartmentSecurity {
     }
     public boolean canAccessToBuilding(UUID buildingId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    
-        // 1. Check Auth
-        if (auth == null) {
-            System.out.println("❌ [SECURITY] Authentication is NULL");
+        if (auth == null || !(auth.getPrincipal() instanceof CustomUserDetails userDetails)) {
             return false;
         }
 
-        // 2. Check Principal
-        if (!(auth.getPrincipal() instanceof CustomUserDetails user)) {
-            System.out.println("❌ [SECURITY] Principal is NOT CustomUserDetails. Type is: " + auth.getPrincipal().getClass().getName());
-            return false;
-        }
+        UUID connectedUserId = userDetails.getUuid();
+        Role role = userDetails.getUser().getRole(); 
 
-        System.out.println("✅ [SECURITY] User: " + user.getUsername() + " | Role: " + user.getRole());
-
-        // 3. Check Building & Logic
         return buildingRepository.findById(buildingId).map(building -> {
-            UUID connectedUserId = user.getUuid();
-            UUID buildingSyndicId = (building.getSyndic() != null) ? building.getSyndic().getId() : null;
-
-            System.out.println("🔍 [SECURITY] Building Found: " + buildingId);
-            System.out.println("🔍 [SECURITY] Connected User ID: " + connectedUserId);
-            System.out.println("🔍 [SECURITY] Building Syndic ID: " + buildingSyndicId);
-
-            if (!"ROLE_SYNDIC".equals(user.getRole())) {
-                System.out.println("❌ [SECURITY] Access Denied: Role is not ROLE_SYNDIC");
+            if (role != Role.SYNDIC) {
                 return false;
             }
 
-            boolean hasAccess = connectedUserId.equals(buildingSyndicId);
-            System.out.println(hasAccess ? "✅ [SECURITY] ACCESS GRANTED" : "❌ [SECURITY] ACCESS DENIED: ID Mismatch");
-
-            return hasAccess;
-        }).orElseGet(() -> {
-            System.out.println("❌ [SECURITY] Building not found in DB: " + buildingId);
-            return false;
-        });
+            if (building.getSyndic() == null) return false;
+            return building.getSyndic().getId().equals(connectedUserId);
+        }).orElse(false);
     }
 }
