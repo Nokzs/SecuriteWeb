@@ -9,6 +9,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.server.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
 
@@ -16,14 +17,19 @@ import reactor.core.publisher.Mono;
 public class UserController {
 
   @GetMapping("/auth/csrf")
-  public Mono<Map<String, Object>> csrf(Mono<CsrfToken> csrfToken) {
-    return csrfToken
-      .map(token -> Map.<String, Object>of(
-        "headerName", token.getHeaderName(),
-        "parameterName", token.getParameterName(),
-        "token", token.getToken()
-      ))
-      .defaultIfEmpty(Map.of("token", null));
+  public Mono<Map<String, Object>> csrf(ServerWebExchange exchange) {
+    Mono<CsrfToken> csrfTokenMono = exchange.getAttribute(CsrfToken.class.getName());
+
+    if (csrfTokenMono == null) {
+      return Mono.just(Map.of("token", "null"));
+    }
+
+    return csrfTokenMono
+        .map(csrfToken -> Map.<String, Object>of(
+            "headerName", csrfToken.getHeaderName(),
+            "parameterName", csrfToken.getParameterName(),
+            "token", csrfToken.getToken()))
+        .defaultIfEmpty(Map.of("token", "null"));
   }
 
   @GetMapping("/login")
@@ -56,25 +62,23 @@ public class UserController {
     String role = user.getClaimAsString("role");
 
     List<String> roles = user.getAuthorities().stream()
-      .map(GrantedAuthority::getAuthority)
-      .toList();
+        .map(GrantedAuthority::getAuthority)
+        .toList();
 
     if (role != null && !role.isBlank()) {
       roles = java.util.stream.Stream.concat(
           roles.stream(),
-          java.util.stream.Stream.of("ROLE_" + role)
-        )
-        .distinct()
-        .toList();
+          java.util.stream.Stream.of("ROLE_" + role))
+          .distinct()
+          .toList();
     }
 
     return Mono.just(Map.of(
-      "authenticated", true,
-      "sub", sub,
-      "name", name,
-      "email", email,
-      "role", role,
-      "roles", roles
-    ));
+        "authenticated", true,
+        "sub", sub,
+        "name", name,
+        "email", email,
+        "role", role,
+        "roles", roles));
   }
 }

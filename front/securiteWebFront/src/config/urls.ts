@@ -19,6 +19,8 @@ export const GATEWAY_BASE = required(
 
 export const APP_NAME = import.meta.env.VITE_APP_NAME ?? "appA";
 
+export const CSRF_ENDPOINT = `${GATEWAY_BASE}/auth/csrf`;
+
 export const LOGIN_URL = `${GATEWAY_BASE}/login?app=${APP_NAME}`;
 
 export const CLIENT_ID = required(

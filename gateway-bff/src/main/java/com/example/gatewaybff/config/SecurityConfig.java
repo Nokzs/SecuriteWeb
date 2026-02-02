@@ -1,5 +1,7 @@
 package com.example.gatewaybff.config;
 
+import reactor.core.publisher.Mono;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,12 +30,36 @@ import org.slf4j.LoggerFactory;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
+    /**
+     * Force CSRF token generation/storage for /auth/csrf even if token does not yet exist in session.
+     * This guarantees the cookie XSRF-TOKEN is always set after handshake.
+     */
+    @Bean
+    public org.springframework.web.server.WebFilter forceCsrfTokenGeneratingWebFilter() {
+        return (exchange, chain) -> {
+            if ("/auth/csrf".equals(exchange.getRequest().getPath().value())) {
+                org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository repo = org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository.withHttpOnlyFalse();
+                repo.setCookiePath("/");
+                // Charger ou créer le token, puis poursuivre la chaîne de filtre (ne pas retourner le CsrfToken lui-même)
+                return repo.loadToken(exchange)
+                .switchIfEmpty(
+                    repo.generateToken(exchange)
+                        .flatMap(token -> repo.saveToken(exchange, token).then(Mono.just(token)))
+                )
+                .then(chain.filter(exchange));
+            }
+            return chain.filter(exchange);
+        };
+    }
+
+
   private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
   @Bean
   SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
       ServerAuthenticationSuccessHandler oauth2SuccessHandler, Environment env) {
     CookieServerCsrfTokenRepository csrfTokenRepository = CookieServerCsrfTokenRepository.withHttpOnlyFalse();
+    csrfTokenRepository.setCookiePath("/");
 
     return http
         .csrf(csrf -> csrf
@@ -140,7 +166,13 @@ public class SecurityConfig {
     config.setAllowedOrigins(allowedOrigins);
     config.setAllowCredentials(true);
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-    config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+    config.setAllowedHeaders(List.of(
+        "Authorization",
+        "Content-Type",
+        "X-Requested-With",
+        "Accept",
+        "X-XSRF-TOKEN"
+    ));
     config.setExposedHeaders(List.of("Set-Cookie"));
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

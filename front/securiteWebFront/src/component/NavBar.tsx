@@ -10,7 +10,7 @@ export const NavBar = ({ children }: NavBarProps) => {
     await secureFetch(`${import.meta.env.VITE_APIURL}/auth/logout`, {
       method: "POST",
     });
-    await fetch(`${import.meta.env.VITE_APIURL}/auth/csrf`, {
+    await fetch(`${import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082"}/auth/csrf`, {
       credentials: "include",
       method: "GET",
     })

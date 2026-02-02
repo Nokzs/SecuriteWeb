@@ -104,7 +104,7 @@ const routes = [
 ];
 function App() {
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_APIURL}/auth/csrf`, {
+    fetch(`${import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082"}/auth/csrf`, {
       credentials: "include",
       method: "GET",
     })
