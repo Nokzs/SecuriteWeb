@@ -55,14 +55,14 @@ spring:
               filters:
                 - TokenRelay
                 - RewritePath=/${APPA_PATH_PREFIX:appA}/api/(?<segment>.*), /api/${segment}
-
             - id: appb-api
-              uri: ${APPB_BASE_URI:http://appb:8080}
+              uri: ${APPB_BASE_URI:${MONOLITH_BASE_URIB:http://backendB:8080}}
               predicates:
                 - Path=/${APPB_PATH_PREFIX:appB}/api/**
               filters:
                 - TokenRelay
-                - RewritePath=/appB/api/(?<segment>.*), /api/${segment}
+                - RewritePath=/${APPB_PATH_PREFIX:appB}/api/(?<segment>.*), /api/${segment}
+
 
 logging:
   level:

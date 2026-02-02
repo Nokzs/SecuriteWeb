@@ -13,7 +13,6 @@ import { AuthRoute } from "./auth/AuthRoute";
 import { ApartmentList } from "./syndic/apartments/component/apartmentsList";
 import { Home } from "./public/home";
 import { FirstOwnerLogin } from "./owner/FirstOwnerLogin";
-import Callback from "./auth/sso/callback";
 
 const routes = [
   {
@@ -28,10 +27,6 @@ const routes = [
       {
         path: "/login",
         element: <Login />,
-      },
-      {
-        path: "/callback",
-        element: <Callback />,
       },
       {
         path: "/register",
@@ -104,10 +99,13 @@ const routes = [
 ];
 function App() {
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082"}/auth/csrf`, {
-      credentials: "include",
-      method: "GET",
-    })
+    fetch(
+      `${import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082"}/auth/csrf`,
+      {
+        credentials: "include",
+        method: "GET",
+      },
+    )
       .then(() => console.log("Handshake CSRF réussi"))
       .catch((err) => console.error("Échec handshake", err));
   }, []);

@@ -1,21 +1,7 @@
 import Cookies from "js-cookie";
 import { useCallback } from "react";
 
-import { refreshAccessToken } from "../auth/sso/ssoAuthService";
-import { TOKEN_ENDPOINT } from "../config/urls";
 import { userStore } from "../store/userStore";
-
-let refreshPromise: Promise<string> | null = null;
-
-const waitForRefresh = async () => {
-  if (!refreshPromise) {
-    refreshPromise = refreshAccessToken().finally(() => {
-      refreshPromise = null;
-    });
-  }
-
-  return refreshPromise;
-};
 
 export const useSecureFetch = () => {
   const secureFetch = useCallback(
@@ -51,13 +37,6 @@ export const useSecureFetch = () => {
           }
           return response;
         }
-
-        if (url.startsWith(TOKEN_ENDPOINT)) {
-          return response;
-        }
-
-        const newAccessToken = await waitForRefresh();
-        headers.set("Authorization", `Bearer ${newAccessToken}`);
 
         return await doFetch();
       } catch (error) {

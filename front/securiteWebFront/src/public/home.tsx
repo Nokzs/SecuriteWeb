@@ -1,4 +1,3 @@
-import { Login } from "../auth/sso/login";
 import { PublicNavBar } from "../component/PublicNavBar";
 import { SyndicsDirectory } from "../syndic/component/syndicsDirectory";
 
@@ -60,7 +59,6 @@ export function Home() {
           </div>
         </section>
 
-        {/* CTA Section */}
         <section className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg text-white p-12 text-center">
           <h2 className="text-3xl font-bold mb-4">
             Vous êtes propriétaire ou locataire?
@@ -70,9 +68,12 @@ export function Home() {
             propriétés
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Login className="bg-white text-blue-600 font-semibold py-3 px-8 rounded-lg hover:bg-gray-100 transition inline-block">
-              Se connecter
-            </Login>
+            <a
+              href={`${import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082"}/login?app=appA`}
+              className="bg-white text-blue-600 font-semibold py-3 px-8 rounded-lg hover:bg-gray-100 transition inline-block"
+            >
+              Connexion
+            </a>
             <a
               href="/register"
               className="border-2 border-white text-white font-semibold py-3 px-8 rounded-lg hover:bg-white hover:text-blue-600 transition inline-block"

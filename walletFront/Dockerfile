@@ -12,5 +12,5 @@ FROM nginx:stable-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 # Config pour gérer le routage (indispensable pour les Single Page Apps)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
+EXPOSE 81
 CMD ["nginx", "-g", "daemon off;"]

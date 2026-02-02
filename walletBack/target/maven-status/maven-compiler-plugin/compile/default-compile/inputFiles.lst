@@ -1,0 +1,8 @@
+/app/src/main/java/com/example/walletback/WalletBackApplication.java
+/app/src/main/java/com/example/walletback/config/JwtToUserConverter.java
+/app/src/main/java/com/example/walletback/web/UserController.java
+/app/src/main/java/com/example/walletback/entities/User.java
+/app/src/main/java/com/example/walletback/dto/TransfertMoneyRequest.java
+/app/src/main/java/com/example/walletback/repository/UserRepository.java
+/app/src/main/java/com/example/walletback/config/SecurityConfig.java
+/app/src/main/java/com/example/walletback/dto/AddMoneyRequest.java

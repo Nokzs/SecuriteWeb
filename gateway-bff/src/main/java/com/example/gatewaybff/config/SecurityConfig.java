@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -13,9 +14,14 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.oidc.web.server.logout.OidcClientInitiatedServerLogoutSuccessHandler;
+import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler;
+import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler;
 import org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository;
 import org.springframework.security.web.server.csrf.ServerCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher;
@@ -34,6 +40,12 @@ import org.springframework.security.web.server.csrf.CsrfToken;
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
+
+    @Autowired
+    private ReactiveClientRegistrationRepository clientRegistrationRepository;
+
+    @Autowired
+    private LogoutProperties appProps;
 
     /**
      * Force CSRF token generation/storage for /auth/csrf even if token does not yet
@@ -79,25 +91,23 @@ public class SecurityConfig {
 
         return http
                 .csrf(csrf -> csrf
-    .csrfTokenRepository(csrfTokenRepository)
-    .csrfTokenRequestHandler(new ServerCsrfTokenRequestAttributeHandler())
-    .requireCsrfProtectionMatcher(exchange -> {
-        String method = exchange.getRequest().getMethod().name();
-        if (Arrays.asList("GET", "HEAD", "TRACE", "OPTIONS").contains(method)) {
-            return ServerWebExchangeMatcher.MatchResult.notMatch();
-        }
+                        .csrfTokenRepository(csrfTokenRepository)
+                        .csrfTokenRequestHandler(new ServerCsrfTokenRequestAttributeHandler())
+                        .requireCsrfProtectionMatcher(exchange -> {
+                            String method = exchange.getRequest().getMethod().name();
+                            if (Arrays.asList("GET", "HEAD", "TRACE", "OPTIONS").contains(method)) {
+                                return ServerWebExchangeMatcher.MatchResult.notMatch();
+                            }
 
-        return new NegatedServerWebExchangeMatcher(
-            ServerWebExchangeMatchers.pathMatchers(
-                "/login/**", 
-                "/oauth2/**", 
-                "/auth/logout", 
-                "/auth/csrf",
-                "/" + env.getProperty("APPA_PATH_PREFIX", "appA") + "/api/auth/register"
-            )
-        ).matches(exchange);
-    })
-        )                .cors(Customizer.withDefaults())
+                            return new NegatedServerWebExchangeMatcher(
+                                    ServerWebExchangeMatchers.pathMatchers(
+                                            "/login/**",
+                                            "/oauth2/**",
+                                            "/auth/csrf",
+                                            "/" + env.getProperty("APPA_PATH_PREFIX", "appA") + "/api/auth/register"))
+                                    .matches(exchange);
+                        }))
+                .cors(Customizer.withDefaults())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(new HttpStatusServerEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeExchange(ex -> ex
@@ -115,7 +125,9 @@ public class SecurityConfig {
                         .pathMatchers("/" + env.getProperty("APPA_PATH_PREFIX", "appA") + "/api/**").authenticated()
                         .anyExchange().permitAll())
                 .oauth2Login(oauth2 -> oauth2.authenticationSuccessHandler(oauth2SuccessHandler))
-                .logout(logout -> logout.logoutUrl("/auth/logout"))
+                .logout(logout -> logout
+                        .logoutUrl("/auth/logout")
+                        .logoutSuccessHandler(oidcLogoutHandler(appProps)))
                 .build();
     }
 
@@ -213,5 +225,26 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    private ServerLogoutSuccessHandler oidcLogoutHandler(LogoutProperties appProps) {
+        OidcClientInitiatedServerLogoutSuccessHandler logoutHandler = new OidcClientInitiatedServerLogoutSuccessHandler(
+                clientRegistrationRepository);
+
+        return (WebFilterExchange exchange, Authentication authentication) -> {
+            // 1. On récupère le nom du paramètre depuis le YAML (ex: "app")
+            String paramName = appProps.getParam();
+
+            // 2. On récupère la valeur envoyée par le front (ex: "appA")
+            String appTag = exchange.getExchange().getRequest().getQueryParams().getFirst(paramName);
+
+            // 3. On cherche l'URL dans la liste des apps du YAML, sinon l'URL par défaut
+            String targetUrl = appProps.getRedirect().getApps()
+                    .getOrDefault(appTag, appProps.getRedirect().getDefault());
+
+            logoutHandler.setPostLogoutRedirectUri(targetUrl);
+
+            return logoutHandler.onLogoutSuccess(exchange, authentication);
+        };
     }
 }

@@ -13,12 +13,6 @@ export const GATEWAY_BASE = required(
 export const APP_NAME = import.meta.env.VITE_APP_NAME ?? "appA";
 export const API_BASE = `${GATEWAY_BASE}/${APP_NAME}/api`;
 
-export const AUTHORITY = required(
-  "VITE_AUTHORITY",
-  import.meta.env.VITE_AUTHORITY,
-);
-
 export const CSRF_ENDPOINT = `${GATEWAY_BASE}/auth/csrf`;
 export const LOGIN_URL = `${GATEWAY_BASE}/login?app=${APP_NAME}`;
-export const TOKEN_ENDPOINT = `/oauth2/token`;
 export const SCOPES = import.meta.env.VITE_SCOPES ?? "openid profile";
