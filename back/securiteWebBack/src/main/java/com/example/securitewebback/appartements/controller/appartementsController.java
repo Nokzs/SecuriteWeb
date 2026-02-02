@@ -41,14 +41,14 @@ public class appartementsController {
         this.minioService = minioService;
     }
 
-    @PreAuthorize("@apartmentSecurity.canAccessToBuildingBuilding(#buildingId, authentication)")
+    @PreAuthorize("@apartmentSecurity.canAccessToBuilding(#buildingId)")
     @GetMapping("/{buildingId}")
     public ResponseEntity<ApartementAndBuildingDto> getApartments(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int limit,
             @RequestParam(required = false) String search,
-            @PathVariable("buildingId") UUID buildingId,
-            Authentication auth) {
+            @PathVariable("buildingId") UUID buildingId
+            ) {
 
         Pageable pageable = PageRequest.of(page, limit);
         ApartementAndBuildingDto buildingPage = apartmentService.getApartmentsBySyndicId(buildingId, pageable, search);
@@ -56,10 +56,10 @@ public class appartementsController {
         return ResponseEntity.ok(buildingPage);
     }
 
-    @PreAuthorize("@apartmentSecurity.canAccessToBuildingBuilding(#createAppartementDto.buildingId, authentication)")
+    @PreAuthorize("@apartmentSecurity.canAccessToBuilding(#createAppartementDto.buildingId)")
     @PostMapping
-    public ResponseEntity<ApartementDto> createApartement(@RequestBody CreateAppartementDto createAppartementDto,
-            Authentication auth) {
+    public ResponseEntity<ApartementDto> createApartement(@RequestBody CreateAppartementDto createAppartementDto
+            ) {
 
         Apartment createdApartment = apartmentService.createApartment(createAppartementDto);
         String signedLink = null;

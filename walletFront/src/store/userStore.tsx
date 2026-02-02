@@ -1,0 +1,38 @@
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+export type User = {
+  uuid?: string;
+  role?: string;
+  isFirstLogin?: boolean;
+  authenticated?: boolean;
+};
+
+export type UserStoreType = {
+  user: User | null;
+  setUser: (user: User | null) => void;
+  get(user: User | null): User | null;
+  clearUser: () => void;
+};
+
+export const userStore = create<UserStoreType>()(
+  persist(
+    (set) => ({
+      get: (user?: User | null) => {
+        if (!user) return null;
+        return user;
+      },
+      user: null,
+
+      setUser: (user) => set({ user }),
+
+      clearUser: () => {
+        set({ user: null });
+        localStorage.removeItem("auth-storage");
+      },
+    }),
+    {
+      name: "auth-storage",
+    },
+  ),
+);

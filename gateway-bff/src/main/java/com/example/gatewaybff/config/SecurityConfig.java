@@ -17,6 +17,10 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository;
+import org.springframework.security.web.server.csrf.ServerCsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 import org.springframework.security.web.server.authentication.HttpStatusServerEntryPoint;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.cors.CorsConfiguration;
@@ -25,158 +29,189 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.web.server.WebFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.web.server.csrf.CsrfToken;
 
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
     /**
-     * Force CSRF token generation/storage for /auth/csrf even if token does not yet exist in session.
+     * Force CSRF token generation/storage for /auth/csrf even if token does not yet
+     * exist in session.
      * This guarantees the cookie XSRF-TOKEN is always set after handshake.
      */
     @Bean
     public org.springframework.web.server.WebFilter forceCsrfTokenGeneratingWebFilter() {
         return (exchange, chain) -> {
             if ("/auth/csrf".equals(exchange.getRequest().getPath().value())) {
-                org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository repo = org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository.withHttpOnlyFalse();
+                org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository repo = org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository
+                        .withHttpOnlyFalse();
                 repo.setCookiePath("/");
-                // Charger ou créer le token, puis poursuivre la chaîne de filtre (ne pas retourner le CsrfToken lui-même)
                 return repo.loadToken(exchange)
-                .switchIfEmpty(
-                    repo.generateToken(exchange)
-                        .flatMap(token -> repo.saveToken(exchange, token).then(Mono.just(token)))
-                )
-                .then(chain.filter(exchange));
+                        .switchIfEmpty(
+                                repo.generateToken(exchange)
+                                        .flatMap(token -> repo.saveToken(exchange, token).then(Mono.just(token))))
+                        .then(chain.filter(exchange));
             }
             return chain.filter(exchange);
         };
     }
 
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
-  private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
+    @Bean
+    public WebFilter subscribeToCsrfTokenWebFilter() {
+        return (exchange, chain) -> {
+            Mono<CsrfToken> token = exchange.getAttributeOrDefault(CsrfToken.class.getName(), Mono.empty());
+            return token.doOnSuccess(t -> {
+                if (t != null)
+                    t.getToken();
+            }).then(chain.filter(exchange));
+        };
+    }
 
-  @Bean
-  SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
-      ServerAuthenticationSuccessHandler oauth2SuccessHandler, Environment env) {
-    CookieServerCsrfTokenRepository csrfTokenRepository = CookieServerCsrfTokenRepository.withHttpOnlyFalse();
-    csrfTokenRepository.setCookiePath("/");
+    @Bean
+    SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
+            ServerAuthenticationSuccessHandler oauth2SuccessHandler, Environment env) {
 
-    return http
-        .csrf(csrf -> csrf
-            .csrfTokenRepository(csrfTokenRepository))
-        .cors(Customizer.withDefaults())
-        .exceptionHandling(exceptions -> exceptions
-            .authenticationEntryPoint(new HttpStatusServerEntryPoint(HttpStatus.UNAUTHORIZED)))
-        .authorizeExchange(ex -> ex
-            .pathMatchers(HttpMethod.OPTIONS).permitAll()
-            .pathMatchers(HttpMethod.GET, "/" + env.getProperty("APPA_PATH_PREFIX", "appA") + "/api/syndics/**")
-            .permitAll()
-            .pathMatchers(HttpMethod.POST, "/" + env.getProperty("APPA_PATH_PREFIX", "appA") + "/api/auth/register")
-            .permitAll()
-             .pathMatchers(HttpMethod.GET, "/auth/csrf").permitAll()
-             .pathMatchers(HttpMethod.GET, "/login").permitAll()
-             .pathMatchers("/auth/user").authenticated()
-             .pathMatchers("/" + env.getProperty("APPA_PATH_PREFIX", "appA") + "/api/**").authenticated()
-            .anyExchange().permitAll())
-        .oauth2Login(oauth2 -> oauth2.authenticationSuccessHandler(oauth2SuccessHandler))
-        .logout(logout -> logout.logoutUrl("/auth/logout"))
-        .build();
-  }
+        CookieServerCsrfTokenRepository csrfTokenRepository = CookieServerCsrfTokenRepository.withHttpOnlyFalse();
+        csrfTokenRepository.setCookiePath("/");
 
-  @Bean
-  WebFilter oauth2AppHintFilter(org.springframework.core.env.Environment env) {
-    return (exchange, chain) -> {
-      String path = exchange.getRequest().getPath().value();
-      if (!path.startsWith("/oauth2/authorization/")) {
-        return chain.filter(exchange);
-      }
+        return http
+                .csrf(csrf -> csrf
+    .csrfTokenRepository(csrfTokenRepository)
+    .csrfTokenRequestHandler(new ServerCsrfTokenRequestAttributeHandler())
+    .requireCsrfProtectionMatcher(exchange -> {
+        String method = exchange.getRequest().getMethod().name();
+        if (Arrays.asList("GET", "HEAD", "TRACE", "OPTIONS").contains(method)) {
+            return ServerWebExchangeMatcher.MatchResult.notMatch();
+        }
 
-       String appParamName = env.getProperty("app.param", "app");
-       String app = exchange.getRequest().getQueryParams().getFirst(appParamName);
+        return new NegatedServerWebExchangeMatcher(
+            ServerWebExchangeMatchers.pathMatchers(
+                "/login/**", 
+                "/oauth2/**", 
+                "/auth/logout", 
+                "/auth/csrf",
+                "/" + env.getProperty("APPA_PATH_PREFIX", "appA") + "/api/auth/register"
+            )
+        ).matches(exchange);
+    })
+        )                .cors(Customizer.withDefaults())
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(new HttpStatusServerEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .authorizeExchange(ex -> ex
+                        .pathMatchers(HttpMethod.OPTIONS).permitAll()
+                        .pathMatchers(HttpMethod.GET, "/auth/csrf").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/login").permitAll()
+                        .pathMatchers("/oauth2/**").permitAll()
+                        .pathMatchers(HttpMethod.GET,
+                                "/" + env.getProperty("APPA_PATH_PREFIX", "appA") + "/api/syndics/**")
+                        .permitAll()
+                        .pathMatchers(HttpMethod.POST,
+                                "/" + env.getProperty("APPA_PATH_PREFIX", "appA") + "/api/auth/register")
+                        .permitAll()
+                        .pathMatchers("/auth/user").authenticated()
+                        .pathMatchers("/" + env.getProperty("APPA_PATH_PREFIX", "appA") + "/api/**").authenticated()
+                        .anyExchange().permitAll())
+                .oauth2Login(oauth2 -> oauth2.authenticationSuccessHandler(oauth2SuccessHandler))
+                .logout(logout -> logout.logoutUrl("/auth/logout"))
+                .build();
+    }
 
-       logger.info("OAuth2 authorization entry: path={}, {}={}", path, appParamName, app);
+    @Bean
+    WebFilter oauth2AppHintFilter(org.springframework.core.env.Environment env) {
+        return (exchange, chain) -> {
+            String path = exchange.getRequest().getPath().value();
+            if (!path.startsWith("/oauth2/authorization/")) {
+                return chain.filter(exchange);
+            }
 
-       if (app == null || app.isBlank()) {
-         return chain.filter(exchange);
-       }
+            String appParamName = env.getProperty("app.param", "app");
+            String app = exchange.getRequest().getQueryParams().getFirst(appParamName);
 
-       return exchange.getSession()
-           .doOnNext(session -> {
-             session.getAttributes().put("app", app);
-             logger.info("Stored app in session: id={}, app={}", session.getId(), app);
-           })
-           .then(chain.filter(exchange));
-    };
-  }
+            logger.info("OAuth2 authorization entry: path={}, {}={}", path, appParamName, app);
 
-  @Bean
-   ServerAuthenticationSuccessHandler oauth2SuccessHandler(org.springframework.core.env.Environment env) {
-     return (webFilterExchange, authentication) -> webFilterExchange.getExchange().getSession()
-         .flatMap(session -> {
-           String app = (String) session.getAttributes().remove("app");
+            if (app == null || app.isBlank()) {
+                return chain.filter(exchange);
+            }
 
-           logger.info("OAuth2 success: session id={}, app={}", session.getId(), app);
+            return exchange.getSession()
+                    .doOnNext(session -> {
+                        session.getAttributes().put("app", app);
+                        logger.info("Stored app in session: id={}, app={}", session.getId(), app);
+                    })
+                    .then(chain.filter(exchange));
+        };
+    }
 
-           String redirectTarget = resolveRedirectTarget(env, app);
+    @Bean
+    ServerAuthenticationSuccessHandler oauth2SuccessHandler(org.springframework.core.env.Environment env) {
+        return (webFilterExchange, authentication) -> webFilterExchange.getExchange().getSession()
+                .flatMap(session -> {
+                    String app = (String) session.getAttributes().remove("app");
 
-           logger.info("OAuth2 redirecting to: {}", redirectTarget);
+                    logger.info("OAuth2 success: session id={}, app={}", session.getId(), app);
 
-           RedirectServerAuthenticationSuccessHandler delegate = new RedirectServerAuthenticationSuccessHandler(
-               redirectTarget);
-           return delegate.onAuthenticationSuccess(webFilterExchange, authentication);
-         });
-   }
+                    String redirectTarget = resolveRedirectTarget(env, app);
 
-   private static String resolveRedirectTarget(Environment env, String app) {
-     String defaultTarget = env.getProperty("app.redirect.default", "http://localhost:3000/");
+                    logger.info("OAuth2 redirecting to: {}", redirectTarget);
 
-     if (app == null || app.isBlank()) {
-       return normalizeBaseUrl(defaultTarget);
-     }
+                    RedirectServerAuthenticationSuccessHandler delegate = new RedirectServerAuthenticationSuccessHandler(
+                            redirectTarget);
+                    return delegate.onAuthenticationSuccess(webFilterExchange, authentication);
+                });
+    }
 
-     String override = env.getProperty("app.redirect." + app);
-     if (override == null || override.isBlank()) {
-       return normalizeBaseUrl(defaultTarget);
-     }
+    private static String resolveRedirectTarget(Environment env, String app) {
+        String defaultTarget = env.getProperty("app.redirect.default", "http://localhost:3000/");
 
-     return normalizeBaseUrl(override);
-   }
+        if (app == null || app.isBlank()) {
+            return normalizeBaseUrl(defaultTarget);
+        }
 
-   private static String normalizeBaseUrl(String url) {
-     if (url == null || url.isBlank()) {
-       return "/";
-     }
-     if (url.endsWith("/")) {
-       return url;
-     }
-     return url + "/";
-   }
+        String override = env.getProperty("app.redirect." + app);
+        if (override == null || override.isBlank()) {
+            return normalizeBaseUrl(defaultTarget);
+        }
 
-  @Bean
-  CorsConfigurationSource corsConfigurationSource(org.springframework.core.env.Environment env) {
-    CorsConfiguration config = new CorsConfiguration();
+        return normalizeBaseUrl(override);
+    }
 
-    String rawAllowedOrigins = env.getProperty("app.cors.allowed-origins",
-        "http://localhost:3000,http://localhost:3001");
-    List<String> allowedOrigins = Arrays.stream(rawAllowedOrigins.split(","))
-        .map(String::trim)
-        .filter(origin -> !origin.isBlank())
-        .collect(Collectors.toList());
+    private static String normalizeBaseUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return "/";
+        }
+        if (url.endsWith("/")) {
+            return url;
+        }
+        return url + "/";
+    }
 
-    config.setAllowedOrigins(allowedOrigins);
-    config.setAllowCredentials(true);
-    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-    config.setAllowedHeaders(List.of(
-        "Authorization",
-        "Content-Type",
-        "X-Requested-With",
-        "Accept",
-        "X-XSRF-TOKEN"
-    ));
-    config.setExposedHeaders(List.of("Set-Cookie"));
+    @Bean
+    CorsConfigurationSource corsConfigurationSource(org.springframework.core.env.Environment env) {
+        CorsConfiguration config = new CorsConfiguration();
 
-    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    source.registerCorsConfiguration("/**", config);
-    return source;
-  }
+        String rawAllowedOrigins = env.getProperty("app.cors.allowed-origins",
+                "http://localhost:3000,http://localhost:3001");
+        List<String> allowedOrigins = Arrays.stream(rawAllowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isBlank())
+                .collect(Collectors.toList());
+
+        config.setAllowedOrigins(allowedOrigins);
+        config.setAllowCredentials(true);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "X-Requested-With",
+                "Accept",
+                "X-XSRF-TOKEN"));
+        config.setExposedHeaders(List.of("Set-Cookie"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
 }
