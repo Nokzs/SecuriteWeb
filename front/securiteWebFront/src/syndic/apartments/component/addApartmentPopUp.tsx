@@ -93,7 +93,6 @@ export const AddApartmentPopUp = ({
           surface: formData.surface,
           nombrePieces: formData.nombrePieces,
           tantiemes: formData.tantiemes,
-          ownerEmail: formData.ownerEmail,
           deletePhoto: deletePhoto,
           photoFilename: selectedFile ? selectedFile.name : null,
         };

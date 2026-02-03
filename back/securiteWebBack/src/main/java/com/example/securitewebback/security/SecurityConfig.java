@@ -18,6 +18,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -46,7 +47,11 @@ public class SecurityConfig {
                 // 2. Configuration du CSRF (Double Cookie Submit Pattern)
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        .ignoringRequestMatchers(
+                                new AntPathRequestMatcher("/api/syndics/*/contact", "POST"),
+                                new AntPathRequestMatcher("/api/auth/login", "POST")
+                        ))
 
                 // Filtre pour forcer l'envoi du cookie CSRF à chaque requête
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
@@ -61,9 +66,11 @@ public class SecurityConfig {
 
                 // 5. Définition des règles de sécurité sur les URLs
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/syndics/**").permitAll()
-                        .requestMatchers("/error").permitAll() // <--- AJOUTE CECI
+                        // On ne met PAS /api/auth/login ici !
+                        .requestMatchers("/api/auth/register", "/api/auth/csrf").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/syndics").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/syndics/*/contact").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
 
                 // 6. Configuration du Login (Form-data)
@@ -109,7 +116,7 @@ public class SecurityConfig {
         // Autorise ton Front React
         configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
         // Méthodes HTTP autorisées
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         // Indispensable pour s'échanger les cookies (JSESSIONID / XSRF-TOKEN)
         configuration.setAllowCredentials(true);
         // Headers autorisés

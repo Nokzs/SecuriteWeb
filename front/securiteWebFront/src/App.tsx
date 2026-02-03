@@ -13,6 +13,10 @@ import { AuthRoute } from "./auth/AuthRoute";
 import { ApartmentList } from "./syndic/apartments/component/apartmentsList";
 import { Home } from "./public/home";
 import { FirstOwnerLogin } from "./owner/FirstOwnerLogin";
+import { SyndicMessages } from "./syndic/messages/syndicMessages";
+import { MainLayoutOwnerDashboard } from "./owner/dashboard/mainLayoutOwner";
+import { SyndicReclamations } from "./syndic/reclamations/syndicReclamations";
+import { OwnerProperties } from "./owner/ownerProperties";
 
 const routes = [
   {
@@ -72,8 +76,12 @@ const routes = [
                     element: <BuildingsList />,
                   },
                   {
+                    path: "messages",
+                    element: <SyndicMessages />,
+                  },
+                  {
                     path: "reclamations",
-                    element: <>Reclamations Syndic</>,
+                    element: <SyndicReclamations />,
                   },
                 ],
               },
@@ -90,7 +98,19 @@ const routes = [
           },
           {
             path: "owner",
-            element: <>Owner</>,
+            element: <MainLayoutOwnerDashboard />, // Le Layout avec la Navbar latérale
+            children: [
+              {
+                index: true,
+                element: <Navigate to="properties" replace />, // Redirection par défaut
+              },
+              {
+                path: "properties",
+                element: <OwnerProperties />, // Le contenu (Grille + Modale)
+              },
+              // Tu pourras ajouter d'autres pages ici plus tard (ex: historique)
+              // { path: "incidents", element: <OwnerIncidents /> }
+            ],
           },
         ],
       },

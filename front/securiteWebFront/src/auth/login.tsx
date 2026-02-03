@@ -2,7 +2,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation } from "@tanstack/react-query";
-import { useSecureFetch } from "../hooks/secureFetch";
 import { NavLink, useNavigate } from "react-router";
 import { userStore, type UserStoreType } from "../store/userStore";
 const API_URL = import.meta.env.VITE_APIURL;
@@ -14,7 +13,6 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export const Login = () => {
   const setToken = userStore((s: UserStoreType) => s.setToken);
 
-  const secureFetch = useSecureFetch();
   const {
     register,
     handleSubmit,
@@ -28,18 +26,21 @@ export const Login = () => {
     },
   });
   const { mutateAsync, isError, error, reset } = useMutation({
-    mutationFn: async (data: LoginFormValues) => {
-      const formData = new URLSearchParams();
-      formData.append("email", data.email);
-      formData.append("password", data.password);
+  mutationFn: async (data: LoginFormValues) => {
+    const formData = new URLSearchParams();
+    formData.append("email", data.email);
+    formData.append("password", data.password);
 
-      const response = await secureFetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: formData.toString(),
-      });
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        // Pas besoin de token CSRF pour le login en général, 
+        // Spring Security génère la session JUSTE APRÈS.
+      },
+      body: formData.toString(),
+      credentials: "include", // pour recevoir le cookie JSESSIONID
+    });
 
       if (!response.ok) {
         let errorMessage = "Erreur de connexion";

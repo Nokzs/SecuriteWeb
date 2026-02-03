@@ -11,7 +11,6 @@ interface SyndicCardProps {
 }
 
 export function SyndicCard({
-  id,
   name,
   email,
   phone,

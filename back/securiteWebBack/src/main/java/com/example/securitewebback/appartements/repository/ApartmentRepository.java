@@ -15,4 +15,6 @@ public interface ApartmentRepository extends JpaRepository<Apartment, UUID> {
             UUID buildingId,
             String numero,
             Pageable pageable);
+
+    Page<Apartment> findByOwnerId(UUID ownerId, Pageable pageable);
 }

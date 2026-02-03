@@ -1,8 +1,8 @@
-
 package com.example.securitewebback.appartements.controller;
 
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +23,7 @@ import com.example.securitewebback.appartements.dto.CreateAppartementDto;
 import com.example.securitewebback.appartements.dto.UpdateApartmentDto;
 import com.example.securitewebback.appartements.entity.Apartment;
 import com.example.securitewebback.appartements.service.ApartmentService;
-
+import com.example.securitewebback.security.CustomUserDetails;
 import com.example.securitewebback.storage.MinioService;
 
 import jakarta.validation.Valid;
@@ -101,5 +101,20 @@ public class appartementsController {
 
         // 3. Transformation en DTO de réponse
         return ResponseEntity.ok(ApartementDto.fromEntity(apartment, uploadUrl));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<ApartementDto>> getOwnerProperties(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int limit) {
+
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        UUID ownerUuid = userDetails.getUuid();
+
+        Pageable pageable = PageRequest.of(page, limit);
+        Page<ApartementDto> properties = apartmentService.getApartmentsByOwnerId(ownerUuid, pageable);
+
+        return ResponseEntity.ok(properties);
     }
 }
