@@ -7,8 +7,9 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
   redirect:
     default: ${APP_REDIRECT_DEFAULT:http://localhost:3000/}
-    appA: ${APP_REDIRECT_APPA:http://localhost:3000/}
-    appB: ${APP_REDIRECT_APPB:http://localhost:3001/}
+    apps:
+      appA: ${APP_REDIRECT_APPA:http://localhost:3000/}
+      appB: ${APP_REDIRECT_APPB:http://localhost:3001/}
 
 spring:
   application:
@@ -56,13 +57,12 @@ spring:
                 - TokenRelay
                 - RewritePath=/${APPA_PATH_PREFIX:appA}/api/(?<segment>.*), /api/${segment}
             - id: appb-api
-              uri: ${APPB_BASE_URI:${MONOLITH_BASE_URIB:http://backendB:8080}}
+              uri: ${APPB_BASE_URI:${MONOLITH_BASE_URIB:http://backendb:8080}}
               predicates:
                 - Path=/${APPB_PATH_PREFIX:appB}/api/**
               filters:
                 - TokenRelay
                 - RewritePath=/${APPB_PATH_PREFIX:appB}/api/(?<segment>.*), /api/${segment}
-
 
 logging:
   level:

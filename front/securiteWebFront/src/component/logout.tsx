@@ -1,36 +1,28 @@
-import { useSecureFetch } from "../hooks/secureFetch";
 export const LogoutButton = () => {
-  const secureFetch = useSecureFetch();
   const gatewayBase =
     import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082";
 
-  const handleLogout = async () => {
-    try {
-      // On fait l'appel POST vers la Gateway
-      // On passe ?app=appA pour que ta config Java sache où rediriger
-      const response = await secureFetch(
-        `${gatewayBase}/auth/logout?app=appA`,
-        {
-          method: "POST",
-        },
-      );
+  const handleLogout = () => {
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = `${gatewayBase}/auth/logout?app=appA`;
 
-      if (response.ok) {
-        // TRÈS IMPORTANT : Le logout OIDC renvoie une redirection (302) vers le SSO.
-        // fetch ne redirige pas automatiquement la page entière.
-        // On récupère l'URL du SSO renvoyée par la Gateway et on y envoie le navigateur.
-        if (response.redirected) {
-          window.location.href = response.url;
-        } else {
-          // Si la Gateway répond 200 sans redirect (config spécifique), on redirige nous-mêmes
-          window.location.assign("/");
-        }
-      }
-    } catch (error) {
-      console.error("Erreur lors de la déconnexion", error);
+    const csrfToken = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("XSRF-TOKEN="))
+      ?.split("=")[1];
+
+    if (csrfToken) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "_csrf";
+      input.value = decodeURIComponent(csrfToken);
+      form.appendChild(input);
     }
-  };
 
+    document.body.appendChild(form);
+    form.submit();
+  };
   return (
     <div className="border-t border-slate-200 pt-4">
       <button

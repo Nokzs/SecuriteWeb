@@ -14,11 +14,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.oidc.web.server.logout.OidcClientInitiatedServerLogoutSuccessHandler;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler;
@@ -157,17 +155,27 @@ public class SecurityConfig {
         };
     }
 
+    private String resolveTargetUrl(String app) {
+        // 1. On cherche d'abord dans la Map des apps (LogoutProperties)
+        String target = appProps.getRedirect().getApps().get(app);
+
+        // 2. Si non trouvé (cas du login ou mapping YAML complexe), on utilise le
+        // défaut
+        if (target == null || target.isBlank()) {
+            target = appProps.getRedirect().getDefault();
+        }
+
+        return normalizeBaseUrl(target);
+    }
+
     @Bean
-    ServerAuthenticationSuccessHandler oauth2SuccessHandler(org.springframework.core.env.Environment env) {
+    ServerAuthenticationSuccessHandler oauth2SuccessHandler() {
         return (webFilterExchange, authentication) -> webFilterExchange.getExchange().getSession()
                 .flatMap(session -> {
                     String app = (String) session.getAttributes().remove("app");
+                    String redirectTarget = resolveTargetUrl(app); // Utilise la méthode harmonisée
 
-                    logger.info("OAuth2 success: session id={}, app={}", session.getId(), app);
-
-                    String redirectTarget = resolveRedirectTarget(env, app);
-
-                    logger.info("OAuth2 redirecting to: {}", redirectTarget);
+                    logger.info("OAuth2 login success. App: {}, Redirecting to: {}", app, redirectTarget);
 
                     RedirectServerAuthenticationSuccessHandler delegate = new RedirectServerAuthenticationSuccessHandler(
                             redirectTarget);
@@ -228,23 +236,25 @@ public class SecurityConfig {
     }
 
     private ServerLogoutSuccessHandler oidcLogoutHandler(LogoutProperties appProps) {
-        OidcClientInitiatedServerLogoutSuccessHandler logoutHandler = new OidcClientInitiatedServerLogoutSuccessHandler(
-                clientRegistrationRepository);
+        return (exchange, authentication) -> exchange.getExchange().getFormData()
+                .flatMap(formData -> {
+                    // Récupération du tag app
+                    String appTag = formData.getFirst(appProps.getParam());
+                    if (appTag == null) {
+                        appTag = exchange.getExchange().getRequest().getQueryParams().getFirst(appProps.getParam());
+                    }
 
-        return (WebFilterExchange exchange, Authentication authentication) -> {
-            // 1. On récupère le nom du paramètre depuis le YAML (ex: "app")
-            String paramName = appProps.getParam();
+                    String targetUrl = resolveTargetUrl(appTag); // Utilise la même méthode
 
-            // 2. On récupère la valeur envoyée par le front (ex: "appA")
-            String appTag = exchange.getExchange().getRequest().getQueryParams().getFirst(paramName);
+                    logger.info("Logout triggered. App: {}, Target URL: {}", appTag, targetUrl);
 
-            // 3. On cherche l'URL dans la liste des apps du YAML, sinon l'URL par défaut
-            String targetUrl = appProps.getRedirect().getApps()
-                    .getOrDefault(appTag, appProps.getRedirect().getDefault());
+                    OidcClientInitiatedServerLogoutSuccessHandler logoutHandler = new OidcClientInitiatedServerLogoutSuccessHandler(
+                            clientRegistrationRepository);
 
-            logoutHandler.setPostLogoutRedirectUri(targetUrl);
+                    // IMPORTANT: On passe l'URL calculée
+                    logoutHandler.setPostLogoutRedirectUri(targetUrl);
 
-            return logoutHandler.onLogoutSuccess(exchange, authentication);
-        };
+                    return logoutHandler.onLogoutSuccess(exchange, authentication);
+                });
     }
 }

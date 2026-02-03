@@ -89,7 +89,7 @@ services:
       ## Doit avoir ce format,
       - OAUTH2_GATEWAY_REDIRECT_URIS=${OAUTH2_GATEWAY_REDIRECT_URIS:-http://localhost:${GATEWAY_PORT}/login/oauth2/code/${OAUTH2_CLIENT_ID:-gateway-client}}
       #Pareil,
-      - OAUTH2_POST_LOGOUT_REDIRECT_URIS=${OAUTH2_POST_LOGOUT_REDIRECT_URIS:-http://localhost:3000/,http://localhost:3001}
+      - OAUTH2_POST_LOGOUT_REDIRECT_URIS=${OAUTH2_POST_LOGOUT_REDIRECT_URIS:-http://localhost:3000/,http://localhost:3001/}
         # adresse ip du minio
       - MINIO_INTERNAL_URL=http://minio:9000
         # adresse du reverse proxy
@@ -98,7 +98,7 @@ services:
       - MINIO_SECRET_KEY=password123
       - MINIO_BUCKET_NAME=documents-copro
 
-  backendB:
+  backendb:
     image: maven:3.9-eclipse-temurin-21
     container_name: spring-api-devB
     volumes:
@@ -139,14 +139,14 @@ services:
       - GATEWAY_PORT=${GATEWAY_PORT:-8082}
       ##adresse du backend cote navigateur
       - APPA_BASE_URI=${APPA_BASE_URI:-http://backend:8080}
-      - APPB_BASE_URI=${APPB_BASE_URI:-http://backendB:8080}
+      - APPB_BASE_URI=${APPB_BASE_URI:-http://backendb:8080}
       #laisser par défaut
       - APPA_PATH_PREFIX=${APPA_PATH_PREFIX:-appA}
       - APPB_PATH_PREFIX=${APPB_PATH_PREFIX:-appB}
 
       ##adresse du backend cote navigateur
       - MONOLITH_BASE_URI=${MONOLITH_BASE_URI:-http://backend:8080}
-      - MONOLITH_BASE_URIB=${MONOLITH_BASE_URI:-http://backendB:8080}
+      - MONOLITH_BASE_URIB=${MONOLITH_BASE_URIB:-http://backendb:8080}
 
       ##port front A
       - FRONT_PORT=${FRONT_PORT:-3000}

@@ -16,3 +16,5 @@ export const API_BASE = `${GATEWAY_BASE}/${APP_NAME}/api`;
 export const CSRF_ENDPOINT = `${GATEWAY_BASE}/auth/csrf`;
 export const LOGIN_URL = `${GATEWAY_BASE}/login?app=${APP_NAME}`;
 export const SCOPES = import.meta.env.VITE_SCOPES ?? "openid profile";
+export const COPRO_URL =
+  import.meta.env.VITE_COPRO_URL ?? "http://localhost:3001";

@@ -17,3 +17,5 @@ export const CSRF_ENDPOINT = `${GATEWAY_BASE}/auth/csrf`;
 export const LOGIN_URL = `${GATEWAY_BASE}/login?app=${APP_NAME}`;
 export const TOKEN_ENDPOINT = `/oauth2/token`;
 export const SCOPES = import.meta.env.VITE_SCOPES ?? "openid profile";
+export const WALLET_URL =
+  import.meta.env.VITE_WALLET_URL ?? "http://localhost:3001";

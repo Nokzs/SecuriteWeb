@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -31,4 +32,6 @@ public class User {
     @Column(nullable = false)
     private BigDecimal balance;
 
+    @OneToMany(mappedBy = "origin")
+    private List<Operation> sentOperations;
 }

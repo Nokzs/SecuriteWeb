@@ -4,6 +4,7 @@ import { SyndicSearch } from "./syndicSearch";
 import { ContactSyndicForm } from "./contactSyndicForm";
 import { Loader } from "lucide-react";
 import { API_BASE } from "../../config/urls";
+import { useSecureFetch } from "../../hooks/secureFetch";
 interface Syndic {
   id: string;
   firstName: string;
@@ -22,6 +23,7 @@ interface ContactFormData {
 }
 
 export function SyndicsDirectory() {
+  const secureFetch = useSecureFetch();
   const [syndics, setSyndics] = useState<Syndic[]>([]);
   const [filteredSyndics, setFilteredSyndics] = useState<Syndic[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,8 +82,8 @@ export function SyndicsDirectory() {
     if (!selectedSyndic) return;
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_APIURL}/syndics/${selectedSyndic.id}/contact`,
+      const response = await secureFetch(
+        `${API_BASE}/syndics/${selectedSyndic.id}/contact`,
         {
           method: "POST",
           headers: {

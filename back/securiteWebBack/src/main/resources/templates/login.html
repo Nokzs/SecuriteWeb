@@ -1,18 +1,20 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Connexion</title>
+    <title>Connexion | Portail</title>
     <style>
       :root {
-        --bg: #0b1220;
-        --card: #121b2f;
-        --text: #e7ecf5;
-        --muted: #a4b0c6;
-        --primary: #4f7cff;
-        --danger: #ff5d5d;
-        --border: rgba(255, 255, 255, 0.1);
+        --bg: #f8fafc; /* slate-50 */
+        --card: #ffffff;
+        --text-main: #1e293b; /* slate-800 */
+        --text-muted: #64748b; /* slate-500 */
+        --primary: #4f46e5; /* indigo-600 */
+        --primary-hover: #4338ca; /* indigo-700 */
+        --danger: #ef4444; /* red-500 */
+        --border: #e2e8f0; /* slate-200 */
+        --ring: #e0e7ff; /* indigo-100 */
       }
 
       * {
@@ -26,181 +28,199 @@
           ui-sans-serif,
           system-ui,
           -apple-system,
-          Segoe UI,
-          Roboto,
-          Ubuntu,
-          Cantarell,
-          Noto Sans,
-          Helvetica Neue,
-          Arial;
-        background:
-          radial-gradient(
-            900px 400px at 20% 10%,
-            rgba(79, 124, 255, 0.35),
-            transparent 60%
-          ),
-          radial-gradient(
-            700px 350px at 90% 25%,
-            rgba(255, 93, 93, 0.2),
-            transparent 60%
-          ),
-          var(--bg);
-        color: var(--text);
-        display: grid;
-        place-items: center;
-        padding: 24px;
+          sans-serif;
+        background-color: var(--bg);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
       }
 
       .card {
         width: 100%;
-        max-width: 420px;
-        background: rgba(18, 27, 47, 0.92);
+        max-width: 448px; /* max-w-md */
+        background: var(--card);
         border: 1px solid var(--border);
-        border-radius: 16px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-        padding: 24px;
-        backdrop-filter: blur(8px);
+        border-radius: 1rem; /* rounded-2xl */
+        box-shadow:
+          0 20px 25px -5px rgba(0, 0, 0, 0.1),
+          0 10px 10px -5px rgba(0, 0, 0, 0.04); /* shadow-xl */
+        padding: 2rem; /* p-8 */
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 2rem;
       }
 
       .title {
-        margin: 0 0 6px 0;
+        margin: 0;
+        font-size: 1.5rem; /* text-2xl */
         font-weight: 700;
-        letter-spacing: 0.2px;
+        color: var(--text-main);
       }
 
       .subtitle {
-        margin: 0 0 18px 0;
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.4;
+        margin-top: 0.5rem;
+        color: var(--text-muted);
+        font-size: 1rem;
       }
 
-      .field {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-bottom: 14px;
+      .form-group {
+        margin-bottom: 1.25rem; /* space-y-5 */
       }
 
       label {
-        font-size: 13px;
-        color: var(--muted);
+        display: block;
+        font-size: 0.875rem; /* text-sm */
+        font-weight: 500;
+        color: #334155; /* slate-700 */
+        margin-bottom: 0.25rem;
       }
 
       input {
         width: 100%;
-        padding: 12px 12px;
-        border-radius: 10px;
+        padding: 0.75rem; /* p-3 */
+        border-radius: 0.75rem; /* rounded-xl */
         border: 1px solid var(--border);
-        background: rgba(255, 255, 255, 0.04);
-        color: var(--text);
+        background: white;
+        color: black;
+        font-size: 1rem;
+        transition: all 0.2s;
         outline: none;
       }
 
       input:focus {
-        border-color: rgba(79, 124, 255, 0.75);
-        box-shadow: 0 0 0 4px rgba(79, 124, 255, 0.15);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--ring);
       }
 
-      .row {
+      input::placeholder {
+        color: #94a3b8;
+      }
+
+      .alert {
+        padding: 0.75rem;
+        border-radius: 0.75rem;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+        border: 1px solid;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin: 14px 0 18px 0;
+        gap: 0.5rem;
       }
 
-      .checkbox {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 13px;
-        color: var(--muted);
-        user-select: none;
+      .alert-error {
+        background-color: #fef2f2; /* red-50 */
+        border-color: #fee2e2; /* red-100 */
+        color: #b91c1c; /* red-700 */
       }
 
-      .checkbox input {
-        width: 16px;
-        height: 16px;
+      .alert-success {
+        background-color: #f0fdf4;
+        border-color: #dcfce7;
+        color: #15803d;
       }
 
       button {
         width: 100%;
-        padding: 12px;
+        padding: 0.75rem;
         border: 0;
-        border-radius: 10px;
-        background: linear-gradient(
-          180deg,
-          rgba(79, 124, 255, 1),
-          rgba(67, 104, 230, 1)
-        );
+        border-radius: 0.75rem;
+        background-color: var(--primary);
         color: white;
         font-weight: 700;
+        font-size: 1rem;
         cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2);
+        margin-top: 1rem;
       }
 
       button:hover {
-        filter: brightness(1.05);
+        background-color: var(--primary-hover);
       }
 
-      .error {
-        background: rgba(255, 93, 93, 0.12);
-        border: 1px solid rgba(255, 93, 93, 0.35);
-        color: #ffd0d0;
-        padding: 10px 12px;
-        border-radius: 12px;
-        margin-bottom: 14px;
-        font-size: 13px;
-        line-height: 1.4;
+      button:active {
+        transform: scale(0.98);
       }
 
-      .info {
-        margin-top: 14px;
-        font-size: 12px;
-        color: var(--muted);
-        line-height: 1.4;
+      .footer {
+        text-align: center;
+        margin-top: 1.5rem;
+        font-size: 0.875rem;
+        color: var(--text-muted);
       }
 
-      .info code {
-        color: var(--text);
+      .link {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .link:hover {
+        text-decoration: underline;
       }
     </style>
   </head>
 
   <body>
     <main class="card">
-      <h1 class="title">Connexion</h1>
-      <p class="subtitle">Connecte-toi avec ton email et mot de passe.</p>
+      <div class="header">
+        <h1 class="title">Bienvenue</h1>
+        <p class="subtitle">Veuillez vous connecter à votre compte</p>
+      </div>
 
-      <div class="error" th:if="${param.error}">Identifiants invalides.</div>
+      <div class="alert alert-error" th:if="${param.error}">
+        <strong>⚠</strong> Identifiants invalides.
+      </div>
 
-      <div class="error" th:if="${param.logout}">Vous ates d9connect9.</div>
+      <div class="alert alert-success" th:if="${param.logout}">
+        <strong>✓</strong> Déconnexion réussie.
+      </div>
 
       <form method="post" th:action="@{/login}">
-        <div class="field">
+        <div class="form-group">
           <label for="username">Email</label>
           <input
             id="username"
             name="username"
             type="email"
-            autocomplete="username"
+            placeholder="nom@exemple.com"
             required
           />
         </div>
 
-        <div class="field">
+        <div class="form-group">
           <label for="password">Mot de passe</label>
           <input
             id="password"
             name="password"
             type="password"
-            autocomplete="current-password"
+            placeholder="••••••••"
             required
           />
         </div>
 
         <button type="submit">Se connecter</button>
       </form>
+
+      <div class="footer">
+        Pas encore de compte ?
+        <a href="/register" class="link">S'inscrire</a>
+      </div>
     </main>
   </body>
 </html>

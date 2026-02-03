@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useSecureFetch } from "../hooks/secureFetch";
 import { useNavigate } from "react-router";
 import { userStore, type UserStoreType } from "../store/userStore";
-const API_URL = import.meta.env.VITE_APIURL;
+import { API_BASE } from "../config/urls";
 const registerSchema = z.object({
   email: z.string().min(1, { message: "L'email est requis" }),
   password: z
@@ -45,7 +45,7 @@ export const Register = () => {
   });
   const { mutateAsync } = useMutation({
     mutationFn: async (data: RegisterFormValues) => {
-      const response = await secureFetch(`${API_URL}/auth/register`, {
+      const response = await secureFetch(`${API_BASE}/auth/register`, {
         method: "POST",
         body: JSON.stringify(data),
       });

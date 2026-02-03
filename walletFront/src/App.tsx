@@ -2,11 +2,18 @@ import { createBrowserRouter, RouterProvider } from "react-router";
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Home } from "./public/home";
+import { AuthRoute } from "./route/AuthRoute";
 
 const routes = [
   {
     path: "/",
-    element: <Home />,
+    element: <AuthRoute />,
+    children: [
+      {
+        index: true,
+        element: <Home />,
+      },
+    ],
   },
 ];
 function App() {

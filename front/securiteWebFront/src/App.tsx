@@ -1,5 +1,4 @@
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
-import { Login } from "./auth/login";
 import { useEffect } from "react";
 import { Register } from "./auth/register";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -23,10 +22,6 @@ const routes = [
         path: "/",
         id: "root",
         element: <Home />,
-      },
-      {
-        path: "/login",
-        element: <Login />,
       },
       {
         path: "/register",

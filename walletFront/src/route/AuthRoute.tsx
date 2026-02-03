@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 import { GATEWAY_BASE, LOGIN_URL } from "../config/urls";
@@ -42,7 +42,6 @@ export function AuthRoute() {
   const user = userStore((s) => s.user);
   const get = userStore((s) => s.get);
   const setUser = userStore((s) => s.setUser);
-  const location = useLocation();
 
   const query = useQuery({
     queryKey: ["gatewayUser"],
@@ -84,21 +83,6 @@ export function AuthRoute() {
   if (!parsedUser) {
     window.location.assign(LOGIN_URL);
     return null;
-  }
-
-  if (
-    parsedUser.role === "PROPRIETAIRE" &&
-    parsedUser.isFirstLogin &&
-    location.pathname !== "/owner/first-login"
-  ) {
-    return <Navigate to="/owner/first-login" replace />;
-  }
-
-  if (
-    parsedUser.role !== "PROPRIETAIRE" &&
-    location.pathname === "/owner/first-login"
-  ) {
-    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;
