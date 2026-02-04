@@ -11,5 +11,5 @@ import com.example.walletback.entities.Operation;
 
 @Repository
 public interface OperationRepository extends JpaRepository<Operation, Long> {
-    Page<Operation> findByUserSsoId(UUID ssoId, Pageable pageable);
+    Page<Operation> findByOrigin_SsoId(UUID ssoId, Pageable pageable);
 }

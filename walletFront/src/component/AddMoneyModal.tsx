@@ -52,7 +52,6 @@ export const AddMoneyModal = ({
             <input
               autoFocus
               type="number"
-              step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"

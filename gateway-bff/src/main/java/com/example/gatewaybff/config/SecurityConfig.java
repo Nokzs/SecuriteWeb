@@ -34,7 +34,6 @@ import org.springframework.web.server.WebFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.web.server.csrf.CsrfToken;
-
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {

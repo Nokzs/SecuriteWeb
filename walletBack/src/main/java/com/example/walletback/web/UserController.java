@@ -27,6 +27,9 @@ import jakarta.persistence.EntityNotFoundException;
 import com.example.walletback.dto.AddMoneyRequest;
 import com.example.walletback.dto.TransfertMoneyRequest;
 import com.example.walletback.dto.UserDto;
+import org.springframework.security.access.prepost.PreAuthorize;
+import com.example.walletback.dto.UserDto;
+import com.example.walletback.entities.User;
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
@@ -41,14 +44,14 @@ public class UserController {
     UserService userService;
 
     @GetMapping
-    public User getUser(Authentication authentication) {
+    public UserDto getUser(Authentication authentication) {
         UUID ssoId = UUID.fromString(authentication.getName());
         User user = userRepository.findBySsoId(ssoId)
                 .orElseThrow(() -> new EntityNotFoundException("Utilisateur non trouvé"));
         return UserDto.fromEntity(user);
     }
 
-    @PreAuthorize("hasRole('PROPRIETAIRE')")
+    //@PreAuthorize("hasRole('PROPRIETAIRE')")
     @PostMapping("/addMoney")
     public ResponseEntity<?> addMoney(@RequestBody AddMoneyRequest request, Authentication authentication) {
         UUID ssoId = UUID.fromString(authentication.getName());

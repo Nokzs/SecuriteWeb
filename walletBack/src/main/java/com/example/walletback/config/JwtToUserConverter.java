@@ -40,6 +40,7 @@ public class JwtToUserConverter implements Converter<Jwt, AbstractAuthentication
                     .email(email)
                     .role(role)
                     .balance(BigDecimal.ZERO)
+                    .currency("EUR")
                     .build();
             return userRepository.save(newUser);
         });

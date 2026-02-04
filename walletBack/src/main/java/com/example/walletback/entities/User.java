@@ -34,4 +34,7 @@ public class User {
 
     @OneToMany(mappedBy = "origin")
     private List<Operation> sentOperations;
+
+    @Column(nullable = true)
+    private String currency = "EUR";
 }

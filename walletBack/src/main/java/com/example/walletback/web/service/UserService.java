@@ -7,9 +7,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.walletback.dto.AddMoneyRequest;
+import org.springframework.web.reactive.function.client.WebClient;
+import com.example.walletback.dto.TransfertMoneyRequest;
 import com.example.walletback.entities.Operation.OperationSign;
 import com.example.walletback.repository.UserRepository;
+import com.example.walletback.entities.User;
+import com.example.walletback.dto.UserDto;
 
+import com.example.walletback.dto.UserLookupDto;
+import reactor.core.publisher.Mono;
+import org.springframework.http.HttpStatusCode;
+import jakarta.persistence.EntityNotFoundException;
 @Service
 public class UserService {
 
@@ -17,7 +25,9 @@ public class UserService {
 
     private final OperationService operationService;
 
-    public UserService(UserRepository userRepository, OperationService operationService) {
+    private final WebClient webClient;
+    public UserService(UserRepository userRepository, OperationService operationService,WebClient webClient) {
+        this.webClient = webClient;
         this.userRepository = userRepository;
         this.operationService = operationService;
     }
@@ -34,8 +44,8 @@ public class UserService {
 
                     operationService.saveOperation(
                             "Dépôt d'argent via Gateway",
-                            user,
                             null,
+                            user,
                             amountToAdd,
                             OperationSign.plus);
 
@@ -48,10 +58,10 @@ public class UserService {
         User sender = userRepository.findBySsoId(senderSsoId)
                 .orElseThrow(() -> new EntityNotFoundException("Expéditeur introuvable"));
 
-        User receiver = userRepository.findByEmail(request.getReceiverEmail())
-                .orElseGet(() -> fetchAndCreateFromAppA(request.getReceiverEmail(), token));
+        User receiver = userRepository.findByEmail(request.getRecipientEmail())
+                .orElseGet(() -> fetchAndCreateFromAppA(request.getRecipientEmail(), token));
 
-        BigDecimal amount = request.getAmount();
+        BigDecimal amount = new BigDecimal(request.getAmount().toString());
 
         if (sender.getBalance().compareTo(amount) < 0) {
             throw new RuntimeException("Solde insuffisant pour effectuer le transfert");
@@ -62,15 +72,15 @@ public class UserService {
 
         operationService.saveOperation(
                 "Transfert vers " + receiver.getEmail(),
-                sender,
                 receiver,
+                sender,
                 amount,
                 OperationSign.minus);
 
         operationService.saveOperation(
                 "Transfert reçu de " + sender.getEmail(),
-                receiver,
                 sender,
+                receiver,
                 amount,
                 OperationSign.plus);
         
@@ -79,7 +89,7 @@ public class UserService {
     }
 
     private User fetchAndCreateFromAppA(String email, String token) {
-        UserDto ssoUser = webClient.get()
+        UserLookupDto ssoUser = webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/user/lookup")
                         .queryParam("email", email) 
@@ -87,7 +97,7 @@ public class UserService {
                 .headers(h -> h.setBearerAuth(token))
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response -> Mono.empty())
-                .bodyToMono(UserDto.class)
+                .bodyToMono(UserLookupDto.class)
                 .block();
 
         if (ssoUser == null) {
@@ -95,9 +105,9 @@ public class UserService {
         }
 
         User newUser = new User();
-        newUser.setEmail(ssoUser.getEmail());
+        newUser.setEmail(ssoUser.email());
         newUser.setRole("SYNDIC"); 
-        newUser.setSsoId(ssoUser.getSsoId());
+        newUser.setSsoId(ssoUser.ssoId());
         newUser.setBalance(BigDecimal.ZERO);
         
         return userRepository.save(newUser);
