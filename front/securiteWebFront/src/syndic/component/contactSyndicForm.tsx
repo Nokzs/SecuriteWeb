@@ -7,6 +7,7 @@ import { z } from "zod";
 const contactFormSchema = z.object({
   firstName: z.string().min(1, "Le prénom est requis"),
   lastName: z.string().min(1, "Le nom est requis"),
+  email: z.string().email("Email invalide"),
   phone: z.string().min(10, "Le téléphone doit contenir au moins 10 chiffres"),
   message: z.string().min(10, "Le message doit contenir au moins 10 caractères"),
 });
@@ -15,14 +16,12 @@ type ContactFormData = z.infer<typeof contactFormSchema>;
 
 interface ContactSyndicFormProps {
   syndicName: string;
-  syndicEmail: string;
   onClose: () => void;
   onSubmit: (data: ContactFormData) => Promise<void>;
 }
 
 export function ContactSyndicForm({
   syndicName,
-  syndicEmail,
   onClose,
   onSubmit,
 }: ContactSyndicFormProps) {
@@ -111,6 +110,21 @@ export function ContactSyndicForm({
             />
             {errors.lastName && (
               <p className="text-red-500 text-sm mt-1">{errors.lastName.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Email
+            </label>
+            <input
+              {...register("email")}
+              type="email"
+              placeholder="votre.email@exemple.com"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            />
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
             )}
           </div>
 

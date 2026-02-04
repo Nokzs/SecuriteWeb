@@ -168,13 +168,10 @@ public class AuthorizationServerConfig {
                 claims.put("role", realUser.getRole());
                 claims.put("email", realUser.getEmail()); // Ton champ mail
 
-                // "sub" doit 5tre un identifiant stable (UUID) pour le Resource Server
                 claims.put("sub", realUser.getId().toString());
+                claims.put("isFirstLogin", realUser.getIsFirstLogin());
             });
 
-            if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
-                context.getClaims().claim("isFirstLogin", realUser.getIsFirstLogin());
-            }
         };
     }
 

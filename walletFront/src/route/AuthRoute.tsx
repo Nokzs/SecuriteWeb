@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-import { GATEWAY_BASE, LOGIN_URL } from "../config/urls";
+import { GATEWAY_BASE, LOGIN_URL, API_BASE } from "../config/urls";
 import { userStore, type User } from "../store/userStore";
 
 type GatewayUser = {
@@ -46,7 +46,7 @@ export function AuthRoute() {
   const query = useQuery({
     queryKey: ["gatewayUser"],
     queryFn: async (): Promise<User | null> => {
-      const response = await fetch(`${GATEWAY_BASE}/auth/user`, {
+      const response = await fetch(`${API_BASE}/auth/user`, {
         method: "GET",
         credentials: "include",
       });

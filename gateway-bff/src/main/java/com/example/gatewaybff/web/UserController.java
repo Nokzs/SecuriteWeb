@@ -60,7 +60,7 @@ public class UserController {
 
     String sub = user.getSubject();
     String role = user.getClaimAsString("role");
-
+    Boolean isFirstLogin = user.getClaimAsBoolean("isFirstLogin");
     List<String> roles = user.getAuthorities().stream()
         .map(GrantedAuthority::getAuthority)
         .toList();
@@ -79,6 +79,7 @@ public class UserController {
         "name", name,
         "email", email,
         "role", role,
-        "roles", roles));
+        "roles", roles,
+        "isFirstLogin", isFirstLogin));
   }
 }

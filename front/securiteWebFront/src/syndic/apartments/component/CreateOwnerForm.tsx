@@ -136,7 +136,11 @@ export const CreateOwnerForm = ({
           </div>
 
           <button
-            onClick={() => onSuccess(mutation.data)}
+            onClick={() => {
+              setCredentials(null);
+              onSuccess(mutation.data);
+              return;
+            }}
             className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-black transition-all shadow-lg"
           >
             J'ai noté le mot de passe
@@ -187,7 +191,7 @@ export const CreateOwnerForm = ({
           <label className="text-sm font-medium text-slate-600">E-mail</label>
           <input
             {...register("email")}
-            className="w-full rounded-lg text-black border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed pointer-coarse:"
+            className="w-full rounded-lg text-black border-slate-200 bg-slate-50 text-black pointer-coarse:"
           />
         </div>
 

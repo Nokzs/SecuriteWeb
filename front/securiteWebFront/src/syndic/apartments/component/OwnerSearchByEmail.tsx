@@ -110,7 +110,10 @@ export const OwnerSearchByEmail = ({
         <CreateOwnerForm
           initialEmail={email || ""}
           onCancel={() => setShowCreateOwnerModal(false)}
-          onSuccess={(owner) => setOwnerEmail(owner.email)}
+          onSuccess={(owner) => {
+            setShowCreateOwnerModal(false);
+            setOwnerEmail(owner.email);
+          }}
         />
       )}
     </div>

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { GATEWAY_BASE } from "../config/urls";
 import { userStore, type User } from "../store/userStore";
+import { useEffect } from "react";
 
 type GatewayUser = {
   authenticated?: boolean;
@@ -50,11 +51,7 @@ export function PublicRoute() {
         method: "GET",
         credentials: "include",
       });
-
-      if (!response.ok) {
-        return null;
-      }
-
+      if (!response.ok) return null;
       const gatewayUser = (await response.json()) as GatewayUser;
       return toAppUser(gatewayUser);
     },
@@ -62,34 +59,42 @@ export function PublicRoute() {
     staleTime: 15_000,
   });
 
-  if (query.isSuccess) {
-    const currentUser = get(user);
-    const nextUser = query.data;
+  useEffect(() => {
+    if (query.isSuccess) {
+      const currentUser = get(user);
+      const nextUser = query.data;
 
-    if (
-      currentUser?.role !== nextUser?.role ||
-      currentUser?.isFirstLogin !== nextUser?.isFirstLogin ||
-      currentUser?.uuid !== nextUser?.uuid
-    ) {
-      setUser(nextUser);
+      if (
+        currentUser?.role !== nextUser?.role ||
+        currentUser?.isFirstLogin !== nextUser?.isFirstLogin ||
+        currentUser?.uuid !== nextUser?.uuid
+      ) {
+        setUser(nextUser);
+      }
     }
-  }
+  }, [query.isSuccess, query.data, user, get, setUser]); // Se déclenche seulement quand query change
 
-  if (query.isLoading) {
-    return null;
-  }
+  if (query.isLoading) return null;
 
-  const parsedUser = get(user);
+  // Utiliser directement query.data ou le store mis à jour
+  const parsedUser = query.data;
 
-  if (parsedUser?.role === "SYNDIC") {
-    return <Navigate to="/syndic" replace />;
-  }
+  // On ne redirige QUE si on est sur la racine "/" ou la page "/login"
+  const isInternalPage =
+    location.pathname.startsWith("/syndic") ||
+    location.pathname.startsWith("/owner");
 
-  if (parsedUser?.role === "PROPRIETAIRE") {
-    if (parsedUser.isFirstLogin) {
-      return <Navigate to="/owner/first-login" replace />;
+  if (parsedUser && !isInternalPage) {
+    if (parsedUser.role === "SYNDIC") {
+      return <Navigate to="/syndic" replace />;
     }
-    return <Navigate to="/owner" replace />;
+
+    if (parsedUser.role === "PROPRIETAIRE") {
+      if (parsedUser.isFirstLogin) {
+        return <Navigate to="/owner/first-login" replace />;
+      }
+      return <Navigate to="/owner" replace />;
+    }
   }
 
   return <Outlet />;

@@ -1,5 +1,5 @@
 import { NavLink, useParams } from "react-router-dom";
-import { StepBack } from "lucide-react";
+import { Receipt, StepBack } from "lucide-react";
 import { NavBar } from "../../component/NavBar";
 export const BuildingNavBar = () => {
   const { buildingId } = useParams();
@@ -13,7 +13,7 @@ export const BuildingNavBar = () => {
           <StepBack className="mr-3" />
         </NavLink>
         <NavLink
-          to={`/syndic/building/${buildingId}/appartments`}
+          to={`/syndic/building/${buildingId}/apartments`}
           className={({ isActive }) =>
             `flex items-center px-4 py-3 rounded-lg transition-colors ${
               isActive
@@ -36,6 +36,19 @@ export const BuildingNavBar = () => {
           }
         >
           Résidents
+        </NavLink>
+        <NavLink
+          to="/syndic/invoices"
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
+              isActive
+                ? "bg-indigo-600 text-white shadow-md"
+                : "text-slate-600 hover:bg-slate-200"
+            }`
+          }
+        >
+          <Receipt size={18} />
+          Mes Signalements
         </NavLink>
       </div>
     </NavBar>

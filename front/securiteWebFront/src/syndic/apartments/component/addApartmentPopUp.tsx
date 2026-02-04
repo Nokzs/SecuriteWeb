@@ -94,7 +94,6 @@ export const AddApartmentPopUp = ({
           surface: formData.surface,
           nombrePieces: formData.nombrePieces,
           tantiemes: formData.tantiemes,
-          ownerEmail: formData.ownerEmail,
           deletePhoto: deletePhoto,
           photoFilename: selectedFile ? selectedFile.name : null,
         };
@@ -196,7 +195,7 @@ export const AddApartmentPopUp = ({
           </p>
         </div>
 
-        {!isEditMode && <OwnerSearchByEmail setOwnerEmail={ownerEmailChange} />}
+        {<OwnerSearchByEmail setOwnerEmail={ownerEmailChange} />}
         <form onSubmit={handleSaveApartment} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">

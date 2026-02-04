@@ -52,7 +52,7 @@ public abstract class User implements Serializable {
         this.password = password;
         this.role = role;
         this.telephone = telephone;
-        this.isFirstLogin = false;
+        this.isFirstLogin = true;
     }
 
     public UUID getId() {

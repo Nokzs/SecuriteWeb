@@ -82,11 +82,14 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-      # Single issuer used by both browser and gateway in docker-compose.
+
+      #SSO
+      #doit être la meme que OAUTH2_ISSUER_URI
       - AUTH_ISSUER=${AUTH_ISSUER:-http://auth.local:8080}
       - OAUTH2_GATEWAY_CLIENT_ID=${OAUTH2_GATEWAY_CLIENT_ID:-${OAUTH2_CLIENT_ID:-gateway-client}} ## vous pouvez laisser par défaut
       - OAUTH2_GATEWAY_CLIENT_SECRET=${OAUTH2_GATEWAY_CLIENT_SECRET:-${OAUTH2_CLIENT_SECRET:-secret-secret}} ##pareil
       - GATEWAY_PORT=${GATEWAY_PORT:-8082} # port de la gateway
+      #adresse externe de la gateway
       - GATEWAY_PUBLIC_BASE_URL=${GATEWAY_PUBLIC_BASE_URL:-http://localhost:${GATEWAY_PORT}}
 
       ## Doit avoir ce format,
@@ -121,7 +124,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-      # Single issuer used by both browser and gateway in docker-compose.
+      #doit être la meme que OAUTH2_ISSUER_URI
       - AUTH_ISSUER=${AUTH_ISSUER:-http://auth.local:8080}
 
   gateway:
@@ -139,32 +142,35 @@ services:
     extra_hosts:
       - "auth.local:host-gateway"
     environment:
+      #port de la gateway
       - GATEWAY_PORT=${GATEWAY_PORT:-8082}
-      ##adresse du backend cote navigateur
+      ##adresse du backend cote interne
       - APPA_BASE_URI=${APPA_BASE_URI:-http://backend:8080}
       - APPB_BASE_URI=${APPB_BASE_URI:-http://backendb:8080}
       #laisser par défaut
       - APPA_PATH_PREFIX=${APPA_PATH_PREFIX:-appA}
       - APPB_PATH_PREFIX=${APPB_PATH_PREFIX:-appB}
 
-      ##adresse du backend cote navigateur
+      ##adresse du backend cote interne
       - MONOLITH_BASE_URI=${MONOLITH_BASE_URI:-http://backend:8080}
       - MONOLITH_BASE_URIB=${MONOLITH_BASE_URIB:-http://backendb:8080}
 
       ##port front A
       - FRONT_PORT=${FRONT_PORT:-3000}
       - FRONT_PORTB=${FRONT_PORTB:-3001}
-      #adre0se front A cote navigateur
+      #adresse front A cote navigateur
       - FRONT_PUBLIC_BASE_URL=${FRONT_PUBLIC_BASE_URL:-http://localhost:${FRONT_PORT}}
       - FRONT_PUBLIC_BASE_URLB=${FRONT_PUBLIC_BASE_URLB:-http://localhost:${FRONT_PORTB}}
+      - CORS_ALLOWED_ORIGINS=${FRONT_PUBLIC_BASE_URL},${FRONT_PUBLIC_BASE_URLB}
 
-      - APP_REDIRECT_DEFAULT=${APP_REDIRECT_DEFAULT:-http://localhost:${FRONT_PORT}/}
       #Doit être authorisé
-      #redirection apres login sur appA
+      #Adresse de redirection
+      - APP_REDIRECT_DEFAULT=${APP_REDIRECT_DEFAULT:-http://localhost:${FRONT_PORT}/}
       - APP_REDIRECT_APPA=${APP_REDIRECT_APPA:-http://localhost:${FRONT_PORT}/}
       - APP_REDIRECT_APPB=${APP_REDIRECT_APPB:-http://localhost:${FRONT_PORTB}/}
+
         # The issuer must be browser-reachable, but the gateway container must also reach it.
-      # Use host.docker.internal (mapped to host-gateway) so the container can call the host-published port 8080.
+        # adresse qui doit être des deux cote (interne et externe)
       - OAUTH2_ISSUER_URI=${OAUTH2_ISSUER_URI:-http://auth.local:8080}
       # doit correspondre avec plus haut
       - OAUTH2_CLIENT_ID=${OAUTH2_CLIENT_ID:-gateway-client}
@@ -184,7 +190,6 @@ services:
     environment:
       #adresse de la gateway
       - VITE_GATEWAY_BASE=${VITE_GATEWAY_BASE:-http://localhost:8082}
-      - VITE_APIURL=${VITE_APIURL:-http://localhost:8082/appA/api}
     command: sh -c "npm install && npm run dev -- --host"
     depends_on:
       - gateway
@@ -199,7 +204,6 @@ services:
       - "${FRONT_PORTB:-3001}:5173"
     environment:
       - VITE_GATEWAY_BASE=${VITE_GATEWAY_BASE:-http://localhost:8082}
-      - VITE_APIURL=${VITE_APIURL:-http://localhost:8082/appB/api}
     command: sh -c "npm install && npm run dev -- --host"
     depends_on:
       - gateway

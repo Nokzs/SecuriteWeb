@@ -6,7 +6,6 @@ public record SyndicPublicDto(
         String lastName,
         String email,
         String phone,
-        String nomAgence,
-        String adresse) {
+        String address,
+        Integer buildingsCount) {
 }
-
