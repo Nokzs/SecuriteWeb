@@ -1,10 +1,11 @@
 package com.example.securitewebback.security;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.springframework.context.annotation.Bean;
-
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,12 +13,12 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -28,96 +29,109 @@ import jakarta.servlet.http.HttpServletResponse;
 @EnableWebSecurity
 public class SecurityConfig {
 
-                                                                private final ConcreteUserDetailsService myUserDetailsService;
-                                                                private final FormLoginSuccesHandler loginSuccessHandler;
+    private final ConcreteUserDetailsService myUserDetailsService;
+    private final FormLoginSuccesHandler loginSuccessHandler;
 
-                                                                public SecurityConfig(ConcreteUserDetailsService myUserDetailsService, FormLoginSuccesHandler loginSuccessHandler) {
-                                                                                                                                this.myUserDetailsService = myUserDetailsService;
-                                                                                                                                this.loginSuccessHandler = loginSuccessHandler;
-                                                                }
+    public SecurityConfig(ConcreteUserDetailsService myUserDetailsService,
+                          FormLoginSuccesHandler loginSuccessHandler) {
+        this.myUserDetailsService = myUserDetailsService;
+        this.loginSuccessHandler = loginSuccessHandler;
+    }
 
-                                                                @Bean
-                                                                public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                                                                                                                                CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
-                                                                                                                                requestHandler.setCsrfRequestAttributeName(null);
-                                                                                                                                http
-                                                                                                                                                                                                                                                                .cors(cors -> cors.configurationSource(
-                                                                                                                                                                                                                                                                                                                                                                                                corsConfigurationSource()))
-                                                                                                                                                                                                                                                                .csrf(csrf -> csrf
-                                                                                                                                                                                                                                                                                                                                                                                                .csrfTokenRepository(CookieCsrfTokenRepository
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                .withHttpOnlyFalse())
-                                                                                                                                                                                                                                                                                                                                                                                                .csrfTokenRequestHandler(requestHandler))
-                                                                                                                                                                                                                                                                .addFilterAfter(new CsrfCookieFilter(),
-                                                                                                                                                                                                                                                                                                                                                                                                BasicAuthenticationFilter.class)
-                                                                                                                                                                                                                                                                .exceptionHandling(ex -> ex
-                                                                                                                                                                                                                                                                                                                                                                                                .authenticationEntryPoint(
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                (AuthenticationEntryPoint) new HttpStatusEntryPoint(
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                HttpStatus.UNAUTHORIZED)))
-                                                                                                                                                                                                                                                                .sessionManagement(session -> session
-                                                                                                                                                                                                                                                                                                                                                                                                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-.authorizeHttpRequests(auth -> auth
-                                                                                                                                                                                                                                                                                                                                                                                                 .requestMatchers("/api/auth/csrf", "/api/auth/login", "/api/auth/register")
-                                                                                                                                                                                                                                                                                                                                                                                                 .permitAll()
-                                                                                                                                                                                                                                                                                                                                                                                                 .anyRequest()
-                                                                                                                                                                                                                                                                                                                                                                                                 .authenticated())
-                                                                                                                                                                                                                                                                .formLogin(form -> form
-                                                                                                                                                                                                                                                                                                                                                                                                .usernameParameter("email")
-                                                                                                                                                                                                                                                                                                                                                                                                .loginProcessingUrl("/api/auth/login")
-                                                                                                                                                                                                                                                                                                                                                                                                .successHandler(this.loginSuccessHandler)
-                                                                                                                                                                                                                                                                                                                                                                                                .failureHandler((req, res, exp) -> {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                res.setContentType("application/json;charset=UTF-8");
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                // 1. Configuration du CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                String errorMessage = exp.getMessage();
+                // 2. Configuration du CSRF (Double Cookie Submit Pattern)
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        .ignoringRequestMatchers(
+                                new AntPathRequestMatcher("/api/syndics/*/contact", "POST"),
+                                new AntPathRequestMatcher("/api/auth/login", "POST")
+                        ))
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                String jsonResponse = String.format(
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                "{\"status\": \"ERROR\", \"message\": \"%s\"}",
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                errorMessage);
+                // Filtre pour forcer l'envoi du cookie CSRF à chaque requête
+                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                res.getWriter().write(jsonResponse);
-                                                                                                                                                                                                                                                                                                                                                                                                }))
-                                                                                                                                                                                                                                                                .logout(logout -> logout
-                                                                                                                                                                                                                                                                                                                                                                                                .logoutUrl("/api/auth/logout")
-                                                                                                                                                                                                                                                                                                                                                                                                .addLogoutHandler((request, response,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                authentication) -> {
-                                                                                                                                                                                                                                                                                                                                                                                                })
-                                                                                                                                                                                                                                                                                                                                                                                                .logoutSuccessHandler((request, response,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                authentication) -> {
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                response.setStatus(HttpServletResponse.SC_OK);
-                                                                                                                                                                                                                                                                                                                                                                                                })
-                                                                                                                                                                                                                                                                                                                                                                                                .invalidateHttpSession(true)
-                                                                                                                                                                                                                                                                                                                                                                                                .deleteCookies("JSESSIONID", "XSRF-TOKEN")
-                                                                                                                                                                                                                                                                                                                                                                                                .clearAuthentication(true));
-                                                                                                                                return http.build();
-                                                                }
+                // 3. Gestion des accès non autorisés (API Style : renvoie 401 au lieu d'une page de login)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
 
-                                                                @Bean
-                                                                public DaoAuthenticationProvider authenticationProvider() {
-                                                                                                                                DaoAuthenticationProvider authProvider;
-                                                                                                                                authProvider = new DaoAuthenticationProvider(myUserDetailsService);
-                                                                                                                                authProvider.setPasswordEncoder(passwordEncoder()); // On
-                                                                                                                                                                                    // lie
-                                                                                                                                                                                    // ton
-                                                                                                                                                                                    // encodeur
-                                                                                                                                                                                    // (BCrypt)
+                // 4. Gestion de la session (Classique pour le mode Cookie/Session)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 
-                                                                                                                                return authProvider;
-                                                                }
+                // 5. Définition des règles de sécurité sur les URLs
+                .authorizeHttpRequests(auth -> auth
+                        // On ne met PAS /api/auth/login ici !
+                        .requestMatchers("/api/auth/register", "/api/auth/csrf").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/syndics").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/syndics/*/contact").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .anyRequest().authenticated())
 
-                                                                @Bean
-                                                                public PasswordEncoder passwordEncoder() {
-                                                                                                                                return new BCryptPasswordEncoder();
-                                                                }
+                // 6. Configuration du Login (Form-data)
+                .formLogin(form -> form
+                        .usernameParameter("email")
+                        .loginProcessingUrl("/api/auth/login")
+                        .successHandler(this.loginSuccessHandler)
+                        .failureHandler((req, res, exp) -> {
+                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"status\": \"ERROR\", \"message\": \"Identifiants invalides\"}");
+                        }))
 
-                                                                @Bean
-                                                                public CorsConfigurationSource corsConfigurationSource() {
-                                                                                                                                CorsConfiguration configuration = new CorsConfiguration();
-                                                                                                                                configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
-                                                                                                                                configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-                                                                                                                                configuration.setAllowCredentials(true);
-                                                                                                                                configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-XSRF-TOKEN", "Accept"));
-                                                                                                                                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-                                                                                                                                source.registerCorsConfiguration("/**", configuration);
-                                                                                                                                return source;
-                                                                }
+                // 7. Configuration du Logout
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(HttpServletResponse.SC_OK);
+                        })
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID", "XSRF-TOKEN")
+                        .clearAuthentication(true));
+
+        return http.build();
+    }
+
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(myUserDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Autorise ton Front React
+        configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
+        // Méthodes HTTP autorisées
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        // Indispensable pour s'échanger les cookies (JSESSIONID / XSRF-TOKEN)
+        configuration.setAllowCredentials(true);
+        // Headers autorisés
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "X-XSRF-TOKEN",
+                "Accept",
+                "X-Requested-With"
+        ));
+        // Headers exposés (pour que React puisse lire certains headers si besoin)
+        configuration.setExposedHeaders(Collections.singletonList("X-XSRF-TOKEN"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 }

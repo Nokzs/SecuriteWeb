@@ -85,6 +85,23 @@ public class ApartmentService {
         return ApartementAndBuildingDto.of(BuildingDto.fromEntity(building), apartmentPageDto);
     }
 
+    public Page<ApartementDto> getApartmentsByOwnerId(UUID ownerId, Pageable pageable) {
+        Page<Apartment> apartments = apartmentRepository.findByOwnerId(ownerId, pageable);
+        return apartments.map(apartment -> {
+            String downloadUrl = null;
+            if (apartment.getPhotoFilename() != null) {
+                try {
+                    String objectName = apartment.getBuilding().getId().toString() + "/"
+                            + apartment.getId().toString() + "/" + apartment.getPhotoFilename();
+                    downloadUrl = minioService.presignedDownloadUrl(objectName);
+                } catch (Exception e) {
+                    log.error("Erreur génération lien photo", e);
+                }
+            }
+            return ApartementDto.fromEntity(apartment, downloadUrl);
+        });
+    }
+
     private void validateTantiemes(Apartment apartment, int newTantiemes) {
         Building building = apartment.getBuilding();
         int maxBuilding = building.getTotalTantieme();

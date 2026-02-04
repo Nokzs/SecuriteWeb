@@ -1,40 +1,34 @@
 package com.example.securitewebback.appartements.dto;
 
+import java.util.UUID;
+
 import com.example.securitewebback.appartements.entity.Apartment;
 
 /**
  * ApartementDto
  */
 public record ApartementDto(
-                                String id,
-
-                                String numero,
-
-                                Integer etage,
-
-                                Double surface,
-
-                                Integer nombrePieces,
-
-                                String photoFilename,
-
-                                Integer tantiemes,
-                                String ownerId,
-
-                                String buildingUuid) {
-
-                public static ApartementDto fromEntity(Apartment apartment, String photoFilename) {
-                                return new ApartementDto(
-                                                                apartment.getId().toString(),
-                                                                apartment.getNumero(),
-                                                                apartment.getEtage(),
-                                                                apartment.getSurface(),
-                                                                apartment.getNombrePieces(),
-                                                                photoFilename,
-                                                                apartment.getTantiemes(),
-                                                                apartment.getOwner() != null ? apartment.getOwner()
-                                                                                                .getEmail() : null,
-                                                                apartment.getBuilding().getId().toString());
-                }
-
+        UUID id,
+        String numero,
+        Integer etage,
+        Double surface,
+        Integer nombrePieces,
+        Integer tantiemes,
+        String photoFilename,
+        String signedLink,
+        BuildingSimpleDto building
+) {
+    public static ApartementDto fromEntity(Apartment apartment, String signedLink) {
+        return new ApartementDto(
+                apartment.getId(),
+                apartment.getNumero(),
+                apartment.getEtage(),
+                apartment.getSurface(),
+                apartment.getNombrePieces(),
+                apartment.getTantiemes(), // Assure-toi que c'est bien un Integer dans ton Entité aussi
+                apartment.getPhotoFilename(),
+                signedLink,
+                BuildingSimpleDto.fromEntity(apartment.getBuilding())
+        );
+    }
 }

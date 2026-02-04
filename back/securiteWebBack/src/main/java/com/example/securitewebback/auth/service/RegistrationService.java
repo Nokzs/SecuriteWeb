@@ -42,14 +42,14 @@ public class RegistrationService {
             throw new IllegalArgumentException("Email already in use");
         }
 
-        Proprietaire newOwner = new Proprietaire();
-        newOwner.setNom(dto.nom());
-        newOwner.setPrenom(dto.prenom());
-        newOwner.setEmail(dto.email());
-        newOwner.setTelephone(dto.telephone());
+        Proprietaire newOwner = new Proprietaire(
+                dto.email(),
+                passwordEncoder.encode(dto.password()), // Hache le ici
+                dto.nom(),
+                dto.prenom(),
+                dto.telephone()
+        );
 
-        String encodedPassword = passwordEncoder.encode(dto.password());
-        newOwner.setPassword(encodedPassword);
         return (Proprietaire) userRepository.save(newOwner);
     }
 }
