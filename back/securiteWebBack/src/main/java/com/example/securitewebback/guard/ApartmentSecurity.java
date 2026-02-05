@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import com.example.securitewebback.appartements.entity.Apartment;
 import com.example.securitewebback.appartements.repository.ApartmentRepository;
 import com.example.securitewebback.auth.entity.Role;
-import com.example.securitewebback.building.entity.Building;
 import com.example.securitewebback.building.repository.BuildingRepository;
 
 @Component("apartmentSecurity")
@@ -30,7 +29,8 @@ public class ApartmentSecurity {
 
     public boolean canAccess(UUID apartmentId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) return false;
+        if (authentication == null)
+            return false;
         CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
 
         Apartment apartment = apartmentRepository.findById(apartmentId)
@@ -49,6 +49,7 @@ public class ApartmentSecurity {
 
         return false;
     }
+
     public boolean canAccessToBuilding(UUID buildingId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof CustomUserDetails userDetails)) {
@@ -56,14 +57,15 @@ public class ApartmentSecurity {
         }
 
         UUID connectedUserId = userDetails.getUuid();
-        Role role = userDetails.getUser().getRole(); 
+        Role role = userDetails.getUser().getRole();
 
         return buildingRepository.findById(buildingId).map(building -> {
             if (role != Role.SYNDIC) {
                 return false;
             }
 
-            if (building.getSyndic() == null) return false;
+            if (building.getSyndic() == null)
+                return false;
             return building.getSyndic().getId().equals(connectedUserId);
         }).orElse(false);
     }

@@ -14,9 +14,7 @@ app:
 spring:
   application:
     name: gateway-bff
-  jpa:
-    hibernate:
-      ddl-auto: update
+
   session:
     store-type: redis
     cookie:

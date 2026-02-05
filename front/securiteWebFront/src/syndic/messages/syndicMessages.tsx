@@ -48,7 +48,7 @@ export function SyndicMessages() {
     enabled: !!parsedUser?.uuid,
     placeholderData: keepPreviousData,
   });
-  console.log(API_BASE);
+
   const markAsReadMutation = useMutation({
     mutationFn: async (messageId: string) => {
       await secureFetch(`${API_BASE}/syndics/messages/${messageId}/read`, {

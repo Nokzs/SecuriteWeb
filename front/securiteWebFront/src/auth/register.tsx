@@ -26,7 +26,6 @@ const registerSchema = z.object({
 });
 type RegisterFormValues = z.infer<typeof registerSchema>;
 export const Register = () => {
-  const setToken = userStore((s: UserStoreType) => s.setToken);
   const secureFetch = useSecureFetch();
   const {
     register,
@@ -50,23 +49,22 @@ export const Register = () => {
         body: JSON.stringify(data),
       });
       if (response.ok) {
-        return response.json();
+        return false;
       }
+      return true;
     },
   });
   const navigate = useNavigate();
   const onSubmit = async (data: RegisterFormValues) => {
-    try {
-      const user = await mutateAsync(data);
-      if (user) {
-        setToken(user.access);
-        navigate("/syndic", { replace: true });
-      }
-    } catch (error) {
-      console.error("Erreur de connexion", error);
+    const user = await mutateAsync(data);
+    if (user) {
+      const gatewayBase =
+        import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082";
+      window.location.assign(
+        `${gatewayBase}/oauth2/authorization/gateway-client`,
+      );
     }
   };
-
   return (
     <div className="flex justify-center items-center min-h-screen bg-slate-50 p-4">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 p-8 animate-in fade-in zoom-in-95 duration-300">
@@ -91,7 +89,7 @@ export const Register = () => {
               id="email"
               type="email"
               {...register("email")}
-              className={`w-full border p-3 rounded-xl outline-none transition-all ${
+              className={`w-full text-black border p-3 rounded-xl outline-none transition-all ${
                 errors.email
                   ? "border-red-400 focus:ring-2 focus:ring-red-100"
                   : "border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -143,7 +141,7 @@ export const Register = () => {
               id="nomAgence"
               type="text"
               {...register("nomAgence")}
-              className={`w-full border p-3 rounded-xl outline-none transition-all ${
+              className={`w-full border text-black p-3 rounded-xl outline-none transition-all ${
                 errors.nomAgence
                   ? "border-red-400 focus:ring-2 focus:ring-red-100"
                   : "border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -160,7 +158,7 @@ export const Register = () => {
           <div>
             <label
               htmlFor="adresse"
-              className="block text-sm font-medium text-slate-700 mb-1"
+              className="block text-sm font-medium text-black  mb-1"
             >
               Adresse
             </label>

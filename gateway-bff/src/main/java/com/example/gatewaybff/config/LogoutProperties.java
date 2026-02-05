@@ -9,12 +9,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "app")
 public class LogoutProperties {
-    private String param = "app"; // Valeur par défaut : "app"
+    private String param = "app"; 
     private Redirect redirect = new Redirect();
 
     public static class Redirect {
-        private String defaultValue; // Mappe "default"
-        private Map<String, String> apps = new HashMap<>(); // Pour appA, appB, etc.
+        private String defaultValue; 
+        private Map<String, String> apps = new HashMap<>(); 
 
         // Getters et Setters
         public String getDefault() {

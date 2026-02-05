@@ -3,6 +3,7 @@ package com.example.securitewebback.auth.entity;
 import java.util.List;
 
 import com.example.securitewebback.appartements.entity.Apartment;
+import com.example.securitewebback.invoice.entity.Invoice;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
@@ -21,6 +22,9 @@ public class Proprietaire extends User {
 
     @OneToMany
     List<Apartment> appartements;
+
+    @OneToMany
+    List<Invoice> invoices;
 
     public Proprietaire() {
         super();

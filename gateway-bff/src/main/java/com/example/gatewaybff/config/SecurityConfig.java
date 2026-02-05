@@ -155,11 +155,8 @@ public class SecurityConfig {
     }
 
     private String resolveTargetUrl(String app) {
-        // 1. On cherche d'abord dans la Map des apps (LogoutProperties)
         String target = appProps.getRedirect().getApps().get(app);
 
-        // 2. Si non trouvé (cas du login ou mapping YAML complexe), on utilise le
-        // défaut
         if (target == null || target.isBlank()) {
             target = appProps.getRedirect().getDefault();
         }
@@ -237,20 +234,18 @@ public class SecurityConfig {
     private ServerLogoutSuccessHandler oidcLogoutHandler(LogoutProperties appProps) {
         return (exchange, authentication) -> exchange.getExchange().getFormData()
                 .flatMap(formData -> {
-                    // Récupération du tag app
                     String appTag = formData.getFirst(appProps.getParam());
                     if (appTag == null) {
                         appTag = exchange.getExchange().getRequest().getQueryParams().getFirst(appProps.getParam());
                     }
 
-                    String targetUrl = resolveTargetUrl(appTag); // Utilise la même méthode
+                    String targetUrl = resolveTargetUrl(appTag); 
 
                     logger.info("Logout triggered. App: {}, Target URL: {}", appTag, targetUrl);
 
                     OidcClientInitiatedServerLogoutSuccessHandler logoutHandler = new OidcClientInitiatedServerLogoutSuccessHandler(
                             clientRegistrationRepository);
 
-                    // IMPORTANT: On passe l'URL calculée
                     logoutHandler.setPostLogoutRedirectUri(targetUrl);
 
                     return logoutHandler.onLogoutSuccess(exchange, authentication);

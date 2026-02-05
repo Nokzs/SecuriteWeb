@@ -79,7 +79,6 @@ export function PublicRoute() {
   // Utiliser directement query.data ou le store mis à jour
   const parsedUser = query.data;
 
-  // On ne redirige QUE si on est sur la racine "/" ou la page "/login"
   const isInternalPage =
     location.pathname.startsWith("/syndic") ||
     location.pathname.startsWith("/owner");

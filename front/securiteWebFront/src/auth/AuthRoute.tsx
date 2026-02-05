@@ -88,23 +88,7 @@ export function AuthRoute() {
     window.location.assign(LOGIN_URL);
     return null;
   }
-  // On ne redirige QUE si on est sur la racine "/" ou la page "/login"
-  const isInternalPage =
-    location.pathname.startsWith("/syndic") ||
-    location.pathname.startsWith("/owner");
 
-  if (parsedUser && !isInternalPage) {
-    if (parsedUser.role === "SYNDIC") {
-      return <Navigate to="/syndic" replace />;
-    }
-
-    if (parsedUser.role === "PROPRIETAIRE") {
-      if (parsedUser.isFirstLogin) {
-        return <Navigate to="/owner/first-login" replace />;
-      }
-      return <Navigate to="/owner" replace />;
-    }
-  }
   // 2. Gestion du flag First Login pour PROPRIETAIRE
   // On vérifie si l'utilisateur DOIT changer son mdp et n'est pas déjà sur la bonne page
   if (

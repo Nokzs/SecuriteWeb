@@ -45,7 +45,7 @@ export function PublicNavBar() {
 
         {isMenuOpen && (
           <div className="absolute top-16 left-0 right-0 bg-white shadow-lg md:hidden z-50">
-            <div className="flex flex-col p-4 gap-4">
+            <div className="flex flex-col p-4 gap-4 justify-center">
               <Link
                 to="/"
                 className="text-gray-700 hover:text-blue-600 font-medium transition py-2"
