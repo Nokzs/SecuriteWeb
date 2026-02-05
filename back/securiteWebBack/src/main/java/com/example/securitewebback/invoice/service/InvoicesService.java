@@ -15,17 +15,18 @@ import com.example.securitewebback.invoice.repository.InvoicesRepository;
 import org.springframework.data.domain.Page;
 import java.math.BigDecimal;
 import org.springframework.data.domain.Pageable;
-
+import com.example.securitewebback.payement.PayementService;
 @Service
 public class InvoicesService {
     private final BuildingRepository buildingRepository;
     private final InvoicesRepository invoiceRepository;
-
-    public InvoicesService(BuildingRepository buildingRepository, InvoicesRepository invoiceRepository) {
+    Private final PayementServie payementService;
+    public InvoicesService(BuildingRepository buildingRepository, InvoicesRepository invoiceRepository,PayementService payementService) {
         this.buildingRepository = buildingRepository;
         this.invoiceRepository = invoiceRepository;
+        this.payementService = payementService;
     }
-
+    
     public void generateInvoicesForBuilding(UUID buildingId, Expense expense) {
         Map<Proprietaire, Integer> tantiemesParProprietaire = getTantiemesParProprietaire(buildingId);
         int totalTantiemes = tantiemesParProprietaire.values().stream().mapToInt(Integer::intValue).sum();
@@ -36,31 +37,32 @@ public class InvoicesService {
             Invoice invoice = new Invoice();
             invoice.setDestinataire(proprietaire);
             invoice.setExpense(expense);
-            invoice.setAmount(new BigDecimal(montantFacture));
+            invoice.setAmount(BigDecimal.valueOf(montantFacture));
             invoice.setLabel(expense.getLabel());
             invoiceRepository.save(invoice);
         }
     }
 
-    /*
-     * public Page<Invoice> getInvoicesByBuildingId(UUID buildingId, Pageable
-     * pageable) {
-     * return invoiceRepository.findByExpense_Building_Id(buildingId, pageable);
-     * }
-     */
-    public Page<Invoice> getInvoices(UUID syndicUuid, Pageable pageable) {
-        return invoiceRepository.findBySyndic(syndicUuid, pageable);
+    public Page<Invoice> getInvoices(UUID ownerId, Pageable pageable) {
+        return invoiceRepository.findByProprietaire(ownerId, pageable);
     }
 
     private Map<Proprietaire, Integer> getTantiemesParProprietaire(UUID buildingId) {
         Building building = buildingRepository.findById(buildingId)
-                .orElseThrow(() -> new RuntimeException("Bâtiment non trouvé"));
+            .orElseThrow(() -> new RuntimeException("Bâtiment non trouvé"));
 
         return building.getApartment().stream()
-                .filter(apartment -> apartment.getOwner() != null)
-                .collect(Collectors.toMap(
+            .filter(apartment -> apartment.getOwner() != null)
+            .collect(Collectors.toMap(
                         apartment -> apartment.getOwner(),
                         apartment -> apartment.getTantiemes(),
                         Integer::sum));
+    }
+    private void payInvoice(UUID invoiceId) {
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+            .orElseThrow(() -> new RuntimeException("Facture non trouvée"));
+        invoice.setStatut(InvoiceStatut.PAID);
+        this.payementService.transfertRequest(invoice.getDestinataire().getId(),invoice.getAmount().doubleValue());
+        invoiceRepository.save(invoice);
     }
 }

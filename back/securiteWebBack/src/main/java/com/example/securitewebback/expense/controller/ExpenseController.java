@@ -18,18 +18,30 @@ import com.example.securitewebback.invoice.invoiceEnum.InvoiceStatut;
 
 import org.springframework.web.bind.annotation.RequestParam;
 
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.List;
+import com.example.securitewebback.invoice.entity.Invoice;
+import com.example.securitewebback.auth.entity.Syndic;
+import org.springframework.web.bind.annotation.RequestBody;
+import com.example.securitewebback.invoice.service.InvoiceService;
+import org.springframework.transaction.annotation.Transactional;
 @RestController
 @RequestMapping("/api/expense")
 public class ExpenseController {
 
     private final ExpenseService expenseService;
-
-    public ExpenseController(ExpenseService expenseService) {
+    private final InvoiceService invoiceService;
+    public ExpenseController(ExpenseService expenseService, InvoiceService invoiceService) {
+        this.invoiceService = invoiceService;
         this.expenseService = expenseService;
     }
 
+    @PreAuthorize("hasRole('SYNDIC')")
     @GetMapping("/{buildingId}")
-    public Page<ExpenseDto> getExpense(@RequestParam String buildingId,
+    public Page<ExpenseDto> getExpense(@PathVariable String buildingId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int limit) {
 
@@ -44,9 +56,21 @@ public class ExpenseController {
                 });
     }
 
+
+    @PreAuthorize("hasRole('SYNDIC')")
     @PostMapping("/{buildingId}")
-    public Expense createExpense(@RequestParam UUID buildingId, CreateExpenseDto request) {
-        return expenseService.createExpense(buildingId, request);
+    @Transactional
+    public void createExpense(@PathVariable UUID buildingId, @RequestBody CreateExpenseDto request) {
+        Expense expense =  expenseService.createExpense(buildingId, request);
+        this.invoiceService.generateInvoicesForBuilding(buildingId, expense);
+        
+    }
+
+    @PreAuthorize("hasRole('SYNDIC')")
+    @PutMapping("/{expenseId}")
+    @Transactional
+    public void cancelExpense(@PathVariable UUID expenseId) {
+    this.expenseService.cancelExpense(expenseId);
     }
 
 }

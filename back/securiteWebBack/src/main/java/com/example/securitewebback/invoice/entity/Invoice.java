@@ -39,7 +39,7 @@ public class Invoice {
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    InvoiceStatut statut = InvoiceStatut.PENDING;
+    private InvoiceStatut statut = InvoiceStatut.PENDING;
 
     @Column(nullable = false)
     private String label;

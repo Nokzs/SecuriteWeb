@@ -63,7 +63,6 @@ public class UserController {
         }
     }
 
-    @PreAuthorize("hasRole('PROPRIETAIRE')")
     @PostMapping("/transfer")
     public ResponseEntity<?> transfer(@RequestBody TransfertMoneyRequest request, Authentication auth) {
         Jwt jwt = (Jwt) auth.getPrincipal();

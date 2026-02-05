@@ -11,5 +11,7 @@ import org.springframework.data.domain.Pageable;
 public interface InvoicesRepository extends JpaRepository<Invoice, UUID> {
     Page<Invoice> findByExpenseBuildingId(UUID buildingId, Pageable pageable);
 
-    Page<Invoice> findBySyndic(UUID syndicUuid, Pageable pageable);
+    @Query("SELECT i FROM Invoice i WHERE i.destinataire.id = :ownerId " +
+    "ORDER BY CASE WHEN i.statut = 'PENDING' THEN 0 ELSE 1 END ASC, i.createdAt DESC")
+        Page<Invoice> findByProprietaire(@Param("ownerId") UUID ownerId, Pageable pageable);
 }

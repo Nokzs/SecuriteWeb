@@ -22,7 +22,6 @@ import com.example.securitewebback.invoice.service.InvoicesService;
 @RestController
 public class InvoiceController {
     private final InvoicesService invoicesService;
-
     public InvoiceController(InvoicesService invoicesService) {
         this.invoicesService = invoicesService;
     }
@@ -30,10 +29,10 @@ public class InvoiceController {
     @GetMapping
     public Page<InvoiceDto> getInvoices(Authentication authentication, @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int limit) {
-        String syndicUuid = authentication.getName();
+        String ownerId = authentication.getName();
         Pageable pageable = Pageable.ofSize(limit).withPage(page);
 
-        Page<Invoice> invoices = this.invoicesService.getInvoices(UUID.fromString(syndicUuid), pageable);
+        Page<Invoice> invoices = this.invoicesService.getInvoices(UUID.fromString(ownerId), pageable);
         return invoices.map(invoice -> {
             return new InvoiceDto(invoice.getLabel(), invoice.getAmount(),
                     BuildingDto.fromEntity(invoice.getExpense().getBuilding()), invoice.getStatut().toString(),
@@ -42,7 +41,9 @@ public class InvoiceController {
     }
 
     @PostMapping("/pay/{invoiceId}")
+    @Transactional
     public void pay(@PathVariable("invoiceId") UUID invoiceId) {
+        this.invoicesService.payInvoice(invoiceId);
     }
 
 }
