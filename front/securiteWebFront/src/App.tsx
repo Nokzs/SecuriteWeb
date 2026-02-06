@@ -57,6 +57,10 @@ const routes = [
                     path: "residents",
                     element: <>Residents Syndic</>,
                   },
+                  {
+                    path: "expenses",
+                    element: <>Expenses Syndic</>,
+                  },
                 ],
               },
               {

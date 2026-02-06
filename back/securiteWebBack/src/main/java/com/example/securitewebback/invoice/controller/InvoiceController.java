@@ -18,10 +18,13 @@ import com.example.securitewebback.invoice.InvoiceDto;
 import com.example.securitewebback.invoice.entity.Invoice;
 import com.example.securitewebback.invoice.service.InvoicesService;
 
+import jakarta.transaction.Transactional;
+
 @RequestMapping("/api/invoices")
 @RestController
 public class InvoiceController {
     private final InvoicesService invoicesService;
+
     public InvoiceController(InvoicesService invoicesService) {
         this.invoicesService = invoicesService;
     }

@@ -9,19 +9,25 @@ import org.springframework.stereotype.Service;
 import com.example.securitewebback.building.repository.BuildingRepository;
 import com.example.securitewebback.expense.dto.CreateExpenseDto;
 import com.example.securitewebback.expense.entity.Expense;
+import com.example.securitewebback.expense.expenseEnum.ExpenseStatut;
 import com.example.securitewebback.expense.repository.ExpenseRepository;
 import com.example.securitewebback.user.repository.SyndicRepository;
 import com.example.securitewebback.building.entity.Building;
 import com.example.securitewebback.auth.entity.Syndic;
 import com.example.securitewebback.invoice.entity.Invoice;
 import com.example.securitewebback.invoice.invoiceEnum.InvoiceStatut;
+import com.example.securitewebback.payement.PaymentService;
+
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 @Service
 public class ExpenseService {
     private final ExpenseRepository expenseRepository;
@@ -30,11 +36,13 @@ public class ExpenseService {
     @Value("${app.paiement.url}")
     private String paiementAppUrl;
     private final PaymentService paymentService;
+
     public ExpenseService(ExpenseRepository expenseRepository, BuildingRepository buildingRepository,
-            SyndicRepository syndicRepository,PaymentService paymentService) {
+            SyndicRepository syndicRepository, PaymentService paymentService, PaymentService paymentService2) {
         this.expenseRepository = expenseRepository;
         this.buildingRepository = buildingRepository;
         this.syndicRepository = syndicRepository;
+        this.paymentService = paymentService2;
     }
 
     public Page<Expense> getExpensesByBuildingId(String buildingId, Pageable pageable) {
@@ -58,16 +66,16 @@ public class ExpenseService {
     @Transactional
     public void cancelExpense(UUID expenseId) {
         Expense expense = expenseRepository.findById(expenseId)
-            .orElseThrow(() -> new RuntimeException("Expense not found"));
+                .orElseThrow(() -> new RuntimeException("Expense not found"));
         List<Invoice> invoices = expense.getInvoices();
-        List<Invoice> toRepay = new List<Invoice>();
         for (Invoice invoice : invoices) {
-            if(invoice.getStatut() == InvoiceStatut.PAID) {
-               this.payementService.transfertRequest(invoice.getDestinataire().getId(),invoice.getAmount().doubleValue());
+            if (invoice.getStatut() == InvoiceStatut.PAID) {
+                this.paymentService.transfertRequest(invoice.getDestinataire().getId(),
+                        invoice.getAmount().doubleValue());
             }
             invoice.setStatut(InvoiceStatut.CANCELLED);
-        } 
+        }
         expense.setStatut(ExpenseStatut.CANCELLED);
     }
 
-   }
+}
