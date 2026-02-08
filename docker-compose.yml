@@ -196,12 +196,14 @@ services:
     working_dir: /app
     volumes:
       - ./walletFront/:/app
+      - /app/node_modules   # Volume anonyme (vital)
     ports:
       - "${FRONT_PORTB:-3001}:5173"
     environment:
       - VITE_GATEWAY_BASE=${VITE_GATEWAY_BASE:-http://localhost:8082}
       - VITE_APIURL=${VITE_APIURL:-http://localhost:8082/appB/api}
-    command: sh -c "npm install && npm run dev -- --host"
+      - CHOKIDAR_USEPOLLING=true # 👈 Aide à la stabilité sur Windows
+    command: sh -c "npm install && npm run dev -- --host --force"
     depends_on:
       - gateway
 
