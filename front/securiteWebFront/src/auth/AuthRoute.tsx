@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LOGIN_URL, API_BASE } from "../config/urls";
 import { userStore, type User } from "../store/userStore";
+import { da } from "zod/locales";
 
 type GatewayUser = {
   authenticated?: boolean;
@@ -16,6 +17,7 @@ const toAppUser = (gatewayUser: GatewayUser): User | null => {
   const roles = gatewayUser.roles ?? [];
   const role = gatewayUser.role;
 
+  // 1. Gestion PROPRIETAIRE
   if (role === "PROPRIETAIRE" || roles.includes("ROLE_PROPRIETAIRE")) {
     return {
       uuid: gatewayUser.sub,
@@ -25,6 +27,7 @@ const toAppUser = (gatewayUser: GatewayUser): User | null => {
     };
   }
 
+  // 2. Gestion SYNDIC
   if (role === "SYNDIC" || roles.includes("ROLE_SYNDIC")) {
     return {
       uuid: gatewayUser.sub,
@@ -34,8 +37,20 @@ const toAppUser = (gatewayUser: GatewayUser): User | null => {
     };
   }
 
+  // 3. Gestion ADMIN 
+  if (role === "ADMIN" || roles.includes("ROLE_ADMIN")) {
+    return {
+      uuid: gatewayUser.sub,
+      role: "ADMIN",
+      authenticated: true,
+      isFirstLogin: false,
+    };
+  }
+
+  // Fallback si aucun rôle connu
   return { uuid: gatewayUser.sub, role: "", authenticated: true };
 };
+
 export function AuthRoute() {
   const { user, setUser } = userStore();
   const [loading, setLoading] = useState(!user);
@@ -46,7 +61,10 @@ export function AuthRoute() {
     fetch(`${API_BASE}/user/me`, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data) setUser(toAppUser(data));
+        if (data) { 
+          setUser(toAppUser(data));
+          console.log(data);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));

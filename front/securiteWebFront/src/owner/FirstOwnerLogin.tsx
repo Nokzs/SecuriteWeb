@@ -62,7 +62,7 @@ export function FirstOwnerLogin() {
         throw new Error(errorMessage);
       }
 
-      return response.json();
+    
     },
   });
 

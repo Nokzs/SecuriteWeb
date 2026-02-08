@@ -131,7 +131,7 @@ public class appartementsController {
         return ResponseEntity.ok(ApartementDto.fromEntity(apartment, uploadUrl));
     }
 
-    @PreAuthorize("HasRole('PROPRIETAIRE')")
+    @PreAuthorize("hasRole('PROPRIETAIRE')")
     @GetMapping
     public ResponseEntity<Page<ApartementDto>> getOwnerProperties(
             Authentication authentication,

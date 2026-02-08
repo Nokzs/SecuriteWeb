@@ -52,7 +52,7 @@ public class BuildingController {
         return ResponseEntity.ok(buildingPage);
     }
 
-    @PreAuthorize("HasRole('SYNDIC')")
+    @PreAuthorize("hasRole('SYNDIC')")
     @PostMapping
     public ResponseEntity<BuildingDto> createBuilding(@RequestBody CreateBuildingDto createBuildingDto,
             Authentication auth) {

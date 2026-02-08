@@ -36,6 +36,14 @@ const toAppUser = (gatewayUser: GatewayUser): User | null => {
     };
   }
 
+  if (role === "ADMIN" || roles.includes("ROLE_ADMIN")) {
+    return {
+      uuid: gatewayUser.sub,
+      role: "ADMIN",
+      authenticated: true,
+    };
+  }
+
   return { uuid: gatewayUser.sub, role: "", authenticated: true };
 };
 
@@ -81,7 +89,8 @@ export function PublicRoute() {
 
   const isInternalPage =
     location.pathname.startsWith("/syndic") ||
-    location.pathname.startsWith("/owner");
+    location.pathname.startsWith("/owner") ||
+    location.pathname.startsWith("/admin");
 
   if (parsedUser && !isInternalPage) {
     if (parsedUser.role === "SYNDIC") {
@@ -94,6 +103,11 @@ export function PublicRoute() {
       }
       return <Navigate to="/owner" replace />;
     }
+
+    if (parsedUser.role === "ADMIN") {
+      return <Navigate to="/admin" replace />;
+    }
+
   }
 
   return <Outlet />;
