@@ -16,6 +16,7 @@ import com.example.securitewebback.user.service.UserService;
 import com.example.securitewebback.user.dto.UserLookupDto;
 import com.example.securitewebback.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
@@ -36,9 +37,9 @@ public class userController {
     public UserDto getProfil(Authentication authentication) {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         User user = userDetails.getUser();
-        return UserDto.fromEntity(user);
+        User connectedUser = userService.findByEmail(user.getEmail());
+        return UserDto.fromEntity(connectedUser);
     }
-
 
     @GetMapping("/lookup")
     public ResponseEntity<UserLookupDto> lookupByEmail(@RequestParam String email) {
@@ -47,4 +48,3 @@ public class userController {
                 .orElse(ResponseEntity.notFound().build());
     }
 }
-

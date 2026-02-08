@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-import { GATEWAY_BASE } from "../config/urls";
+import { API_BASE, GATEWAY_BASE } from "../config/urls";
 import { userStore, type User } from "../store/userStore";
 import { useEffect } from "react";
 
@@ -55,7 +55,7 @@ export function PublicRoute() {
   const query = useQuery({
     queryKey: ["gatewayUser"],
     queryFn: async (): Promise<User | null> => {
-      const response = await fetch(`${GATEWAY_BASE}/auth/user`, {
+      const response = await fetch(`${API_BASE}/user/me`, {
         method: "GET",
         credentials: "include",
       });
@@ -107,7 +107,6 @@ export function PublicRoute() {
     if (parsedUser.role === "ADMIN") {
       return <Navigate to="/admin" replace />;
     }
-
   }
 
   return <Outlet />;

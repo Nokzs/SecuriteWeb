@@ -37,7 +37,7 @@ const toAppUser = (gatewayUser: GatewayUser): User | null => {
     };
   }
 
-  // 3. Gestion ADMIN 
+  // 3. Gestion ADMIN
   if (role === "ADMIN" || roles.includes("ROLE_ADMIN")) {
     return {
       uuid: gatewayUser.sub,
@@ -61,7 +61,7 @@ export function AuthRoute() {
     fetch(`${API_BASE}/user/me`, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data) { 
+        if (data) {
           setUser(toAppUser(data));
           console.log(data);
         }

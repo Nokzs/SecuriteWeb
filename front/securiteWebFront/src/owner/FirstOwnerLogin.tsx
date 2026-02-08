@@ -61,8 +61,6 @@ export function FirstOwnerLogin() {
         }
         throw new Error(errorMessage);
       }
-
-    
     },
   });
 
