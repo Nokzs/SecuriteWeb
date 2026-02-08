@@ -52,7 +52,7 @@ export const ApartmentList = () => {
     setFilter((filter) => ({ ...filter, page: newPage }));
   };
 
-  const { data, isLoading } = useQuery<ApartementAndBuildingDto>({
+  const { data, isLoading, refetch } = useQuery<ApartementAndBuildingDto>({
     queryKey: ["apartments", parsedUser?.uuid, buildingId, filter, searchTerm],
     queryFn: async () => {
       const res = await secureFetch(
@@ -112,6 +112,9 @@ export const ApartmentList = () => {
           setShowAddForm={setShowEditModal}
           building={data?.building}
           apartmentToEdit={apartmentToEdit}
+          onSuccess={() => {
+            refetch();
+          }}
         />
       )}
 

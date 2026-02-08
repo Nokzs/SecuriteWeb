@@ -11,6 +11,7 @@ type AddApartmentPopUpProps = {
   setShowAddForm: React.Dispatch<React.SetStateAction<boolean>>;
   building?: { totalTantieme?: number | null; currentTantieme?: number | null };
   apartmentToEdit?: Apartment | null;
+  onSuccess?: () => void;
 };
 
 import { API_BASE } from "../../../config/urls";
@@ -19,13 +20,14 @@ export const AddApartmentPopUp = ({
   setShowAddForm,
   building,
   apartmentToEdit,
+  onSuccess,
 }: AddApartmentPopUpProps) => {
   const isEditMode = !!apartmentToEdit;
   const { buildingId } = useParams<{ buildingId: string }>();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(
-    isEditMode && apartmentToEdit?.photoFilename
-      ? apartmentToEdit.photoFilename
+    isEditMode && apartmentToEdit?.signedLink
+      ? apartmentToEdit.signedLink
       : null,
   );
   const [deletePhoto, setDeletePhoto] = useState(false);
@@ -33,8 +35,8 @@ export const AddApartmentPopUp = ({
     Omit<Apartment, "buildingUuid" | "id" | "ownerId" | "photoFilename">
   >({
     numero: apartmentToEdit?.numero ?? "",
-    etage: apartmentToEdit?.etage ?? 0, // Initialisé à 0
-    nombrePieces: apartmentToEdit?.nombrePieces ?? 1, // Initialisé à 1
+    etage: apartmentToEdit?.etage ?? 0,
+    nombrePieces: apartmentToEdit?.nombrePieces ?? 1,
     tantiemes: apartmentToEdit?.tantiemes ?? 0,
     surface: apartmentToEdit?.surface,
     ownerEmail: apartmentToEdit?.ownerEmail ?? "",
@@ -127,37 +129,39 @@ export const AddApartmentPopUp = ({
   });
 
   const handleSaveApartment = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!buildingId) return;
-  if (exceedsQuota) return;
+    if (!buildingId) return;
+    if (exceedsQuota) return;
 
-  try {
-    // 1. On lance la sauvegarde en BDD
-    const apartment = await saveApartment.mutateAsync({
-      ...newApartment,
-      photoFilename: selectedFile ? selectedFile.name : null,
-    });
+    try {
+      // 1. On lance la sauvegarde en BDD
+      const apartment = await saveApartment.mutateAsync({
+        ...newApartment,
+        photoFilename: selectedFile ? selectedFile.name : null,
+      });
 
-    // 2. On vérifie si on a un fichier ET le lien signé du Backend
-    if (selectedFile && apartment.signedLink) {
-      console.log("🚀 Uploading vers MinIO via :", apartment.signedLink);
-      await uploadFile(selectedFile, apartment.signedLink);
+      if (selectedFile && apartment.signedLink) {
+        await uploadFile(selectedFile, apartment.signedLink);
+      }
+
+      // 3. UNE SEULE FOIS : On ferme et on reset TOUT
+      setShowAddForm(false);
+      setSelectedFile(null);
+      setPreview(null);
+      setDeletePhoto(false);
+      if (onSuccess) onSuccess();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Erreur lors de la sauvegarde :", err.message);
+      }
+      alert(
+        isEditMode
+          ? "Erreur lors de la modification"
+          : "Erreur lors de l'ajout",
+      );
     }
-
-    // 3. UNE SEULE FOIS : On ferme et on reset TOUT
-    setShowAddForm(false);
-    setSelectedFile(null);
-    setPreview(null);
-    setDeletePhoto(false);
-
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      console.error("Erreur lors de la sauvegarde :", err.message);
-    }
-    alert(isEditMode ? "Erreur lors de la modification" : "Erreur lors de l'ajout");
-  }
-};
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

@@ -74,8 +74,7 @@ public class appartementsController {
                     apt.id(), apt.numero(), apt.etage(), apt.surface(),
                     apt.nombrePieces(), apt.tantiemes(), apt.photoFilename(),
                     signedUrl, // <--- C'est ici que le lien magique arrive au Front !
-                    apt.building(), apt.ownerEmail()
-            );
+                    apt.building(), apt.ownerEmail());
         });
 
         // 3. On renvoie le DTO global avec les appartements mis à jour
@@ -107,8 +106,7 @@ public class appartementsController {
         return ResponseEntity.ok(dto);
     }
 
-
-    @PreAuthorize("@apartmentSecurity.canAccessToBuilding(#createAppartementDto.buildingId)")
+    @PreAuthorize("@apartmentSecurity.canUpdateApartment(#id)")
     @PutMapping("/{id}")
     public ResponseEntity<ApartementDto> updateApartment(
             @PathVariable UUID id,
@@ -120,14 +118,10 @@ public class appartementsController {
 
         if (dto.photoFilename() != null) {
 
-            String objectName = apartment.getBuilding().getId().toString() + "/"
-                    + apartment.getId().toString()
-                    + "/"
-                    + apartment.getPhotoFilename();
-            uploadUrl = minioService.generatePresignedUrl(objectName);
+            String bucketName = apartment.getBuilding().getId().toString();
+            String objectPath = apartment.getId().toString() + "/" + apartment.getPhotoFilename();
+            uploadUrl = minioService.generatePresignedUploadUrl(bucketName, objectPath);
         }
-
-        // 3. Transformation en DTO de réponse
         return ResponseEntity.ok(ApartementDto.fromEntity(apartment, uploadUrl));
     }
 
