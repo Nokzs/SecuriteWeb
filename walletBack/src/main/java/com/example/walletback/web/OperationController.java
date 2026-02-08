@@ -30,7 +30,6 @@ public class OperationController {
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "5") int limit) {
 
-                // Avec l'objet Jwt, on utilise getSubject()
                 String sub = jwt.getSubject();
 
                 Pageable pageable = PageRequest.of(page, limit, Sort.by("date").descending());

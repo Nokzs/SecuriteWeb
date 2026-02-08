@@ -80,10 +80,6 @@ const routes = [
                     path: "reclamations",
                     element: <SyndicReclamations />,
                   },
-                  {
-                    path: "invoices",
-                    element: <>Syndic Invoices</>,
-                  },
                 ],
               },
             ],
