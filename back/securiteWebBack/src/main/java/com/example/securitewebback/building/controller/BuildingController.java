@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -51,6 +52,7 @@ public class BuildingController {
         return ResponseEntity.ok(buildingPage);
     }
 
+    @PreAuthorize("HasRole('SYNDIC')")
     @PostMapping
     public ResponseEntity<BuildingDto> createBuilding(@RequestBody CreateBuildingDto createBuildingDto,
             Authentication auth) {

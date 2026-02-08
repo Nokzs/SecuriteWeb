@@ -4,7 +4,6 @@ import * as z from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { useSecureFetch } from "../hooks/secureFetch";
 import { useNavigate } from "react-router";
-import { userStore, type UserStoreType } from "../store/userStore";
 import { API_BASE } from "../config/urls";
 const registerSchema = z.object({
   email: z.string().min(1, { message: "L'email est requis" }),

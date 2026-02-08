@@ -56,7 +56,7 @@ export const Home = () => {
   });
   const mutation = useMutation({
     mutationFn: async (amount: number) => {
-      const response = await secureFetch(`${API_BASE}/user/addMoney`, {
+      await secureFetch(`${API_BASE}/user/addMoney`, {
         method: "POST",
         body: JSON.stringify({ amount }),
       });
