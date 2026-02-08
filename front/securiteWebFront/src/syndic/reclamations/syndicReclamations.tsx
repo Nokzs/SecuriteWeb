@@ -6,7 +6,7 @@ import { userStore, type UserStoreType } from "../../store/userStore";
 import { IncidentCard } from "./incidentCard";
 import { CreateVoteModal } from "./createVoteModal";
 import type { Page } from "../../types/pagination";
-
+import { API_BASE } from "../../config/urls";
 // Interface alignée avec SyndicIncidentDto du Back-end
 interface Incident {
   id: string;
@@ -51,9 +51,9 @@ export function SyndicReclamations() {
     queryFn: async () => {
       // Construction de l'URL avec gestion du filtre "ALL"
       const statusParam = filterStatus === "ALL" ? "" : `&status=${filterStatus}`;
-
+      
       const res = await secureFetch(
-        `${API_URL}/incidents?limit=${filter.limit}&page=${filter.page}&sortBy=${sortBy}${statusParam}`
+        `${API_BASE}/incidents?limit=${filter.limit}&page=${filter.page}&sortBy=${sortBy}${statusParam}`,
       );
 
       if (!res.ok) {
@@ -69,8 +69,8 @@ export function SyndicReclamations() {
   const handleIgnoreIncident = async (incidentId: string) => {
     try {
       const response = await secureFetch(
-        `${API_URL}/incidents/${incidentId}/ignore`,
-        { method: "PATCH" }
+        `${API_BASE}/incidents/${incidentId}/ignore`,
+        { method: "PATCH" },
       );
 
       if (!response.ok) {
@@ -97,7 +97,7 @@ export function SyndicReclamations() {
 
     try {
       const response = await secureFetch(
-        `${API_URL}/incidents/${selectedIncident.id}/vote`,
+        `${API_BASE}/incidents/${selectedIncident.id}/vote`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -106,7 +106,7 @@ export function SyndicReclamations() {
             endDate: voteData.endDate,
             // CORRECTION : Pas besoin de buildingId ici, l'ID incident est dans l'URL
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -334,7 +334,6 @@ export function SyndicReclamations() {
               )}
             </div>
 
-            {/* Actions */}
             {selectedIncident.status === "PENDING" && (
               <div className="flex flex-col gap-3 mt-auto">
                 <button

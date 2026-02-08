@@ -1,5 +1,4 @@
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
-import { Login } from "./auth/login";
 import { useEffect } from "react";
 import { Register } from "./auth/register";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -17,6 +16,9 @@ import { SyndicMessages } from "./syndic/messages/syndicMessages";
 import { MainLayoutOwnerDashboard } from "./owner/dashboard/mainLayoutOwner";
 import { SyndicReclamations } from "./syndic/reclamations/syndicReclamations";
 import { OwnerProperties } from "./owner/ownerProperties";
+import ExpenseList from "./syndic/expense/expenseList";
+import { GATEWAY_BASE } from "./config/urls";
+import PaymentRequestList from "./owner/invoice/InvoiceList";
 import { OwnerIncidents } from "./owner/OwnerIncidents";
 import { SyndicVotes } from "./syndic/votes/SyndicVotes";
 import { AdminDashboard } from "./admin/AdminDashboard";
@@ -31,10 +33,6 @@ const routes = [
         path: "/",
         id: "root",
         element: <Home />,
-      },
-      {
-        path: "/login",
-        element: <Login />,
       },
       {
         path: "/register",
@@ -63,8 +61,8 @@ const routes = [
                     element: <ApartmentList />,
                   },
                   {
-                    path: "residents",
-                    element: <>Residents Syndic</>,
+                    path: "expenses",
+                    element: <ExpenseList />,
                   },
                 ],
               },
@@ -116,6 +114,8 @@ const routes = [
                 path: "properties",
                 element: <OwnerProperties />, // Le contenu (Grille + Modale)
               },
+              // { path: "incidents", element: <OwnerIncidents /> }
+              { path: "invoices", element: <PaymentRequestList /> },
               {
                 path: "incidents",
                 element: <OwnerIncidents />
@@ -144,7 +144,7 @@ const routes = [
 ];
 function App() {
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_APIURL}/auth/csrf`, {
+    fetch(`${GATEWAY_BASE}/auth/csrf`, {
       credentials: "include",
       method: "GET",
     })

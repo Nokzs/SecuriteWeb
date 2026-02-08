@@ -18,5 +18,6 @@ public class ProprietaireDTO extends UserDto {
                                 this.setRole(p.getRole());
                                 this.nom = p.getNom();
                                 this.prenom = p.getPrenom();
+                                this.setFirstLogin(p.getIsFirstLogin());
                 }
 }

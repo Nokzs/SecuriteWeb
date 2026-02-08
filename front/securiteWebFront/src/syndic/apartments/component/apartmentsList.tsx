@@ -11,6 +11,7 @@ import type { Building } from "../../building/buildingList";
 import { AddApartmentPopUp } from "./addApartmentPopUp";
 import { ApartmentCard } from "./ApartmentCard";
 
+import { API_BASE } from "../../../config/urls";
 type ApartementAndBuildingDto = {
   building: Building;
   appartement: Page<Apartment>;
@@ -26,17 +27,18 @@ export interface Apartment {
   signedLink?: string | null;
   tantiemes: number;
   ownerId?: string;
+  ownerEmail: string;
   buildingUuid: string;
 }
-
-const API_URL = import.meta.env.VITE_APIURL;
 
 export const ApartmentList = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const { buildingId } = useParams<{ buildingId: string }>();
   const [showEditModal, setShowEditModal] = useState(false);
-  const [apartmentToEdit, setApartmentToEdit] = useState<Apartment | null>(null);
+  const [apartmentToEdit, setApartmentToEdit] = useState<Apartment | null>(
+    null,
+  );
   const secureFetch = useSecureFetch();
   const user = userStore((s) => s.user);
   const get = userStore((s) => s.get);
@@ -54,7 +56,7 @@ export const ApartmentList = () => {
     queryKey: ["apartments", parsedUser?.uuid, buildingId, filter, searchTerm],
     queryFn: async () => {
       const res = await secureFetch(
-        `${API_URL}/apartment/${buildingId}?limit=${filter.limit}&page=${filter.page}&search=${encodeURIComponent(searchTerm)}`,
+        `${API_BASE}/apartment/${buildingId}?limit=${filter.limit}&page=${filter.page}&search=${encodeURIComponent(searchTerm)}`,
       );
 
       if (!res.ok) {

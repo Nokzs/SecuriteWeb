@@ -1,0 +1,17 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://auth.local:8080}
+          jwk-set-uri: http://auth.local:8080/oauth2/jwks
+  logging:
+    level:
+      org:
+        springframework:
+          # Pour voir les décisions d'accès (autorisé ou non)
+          security: DEBUG
+          # Pour voir les détails de validation du JWT
+          security.oauth2: DEBUG
+          # Pour voir si le WebClient de l'App A envoie bien les données
+          web.servlet.DispatcherServlet: DEBUG

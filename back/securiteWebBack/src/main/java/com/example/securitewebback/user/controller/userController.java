@@ -13,12 +13,18 @@ import com.example.securitewebback.auth.entity.User;
 import com.example.securitewebback.security.CustomUserDetails;
 import com.example.securitewebback.user.dto.UserDto;
 import com.example.securitewebback.user.service.UserService;
-
+import com.example.securitewebback.user.dto.UserLookupDto;
+import com.example.securitewebback.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/user")
+@RequiredArgsConstructor
 public class userController {
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @GetMapping("/by-email")
     public ResponseEntity<Proprietaire> getUserById(@RequestParam("email") String email) {
@@ -33,4 +39,12 @@ public class userController {
         return UserDto.fromEntity(user);
     }
 
+
+    @GetMapping("/lookup")
+    public ResponseEntity<UserLookupDto> lookupByEmail(@RequestParam String email) {
+        return userRepository.findByEmail(email)
+                .map(user -> ResponseEntity.ok(new UserLookupDto(user.getId(), user.getEmail())))
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
+

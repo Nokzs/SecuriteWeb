@@ -3,6 +3,7 @@ package com.example.securitewebback.auth.entity;
 import java.util.List;
 
 import com.example.securitewebback.appartements.entity.Apartment;
+import com.example.securitewebback.invoice.entity.Invoice;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
@@ -24,6 +25,9 @@ public class Proprietaire extends User {
     @OneToMany(mappedBy = "owner")
     @JsonIgnore
     List<Apartment> appartements;
+
+    @OneToMany
+    List<Invoice> invoices;
 
     public Proprietaire() {
         super();

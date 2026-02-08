@@ -9,7 +9,7 @@ type addBuildingPopUpProps = {
   setShowAddForm: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-const API_URL = import.meta.env.VITE_APIURL;
+import { API_BASE } from "../../config/urls";
 export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -35,7 +35,7 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
         "id" | "syndicId" | "totalTantieme" | "currentTantieme"
       >,
     ) => {
-      const response = await secureFetch(`${API_URL}/building`, {
+      const response = await secureFetch(`${API_BASE}/building`, {
         body: JSON.stringify(formData),
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -44,7 +44,9 @@ export const AddBuildingPopUp = ({ setShowAddForm }: addBuildingPopUpProps) => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["buildings", parsedUser?.uuid] });
+      queryClient.invalidateQueries({
+        queryKey: ["buildings", parsedUser?.uuid],
+      });
     },
   });
   const handleAddBuilding = async (e: React.FormEvent) => {

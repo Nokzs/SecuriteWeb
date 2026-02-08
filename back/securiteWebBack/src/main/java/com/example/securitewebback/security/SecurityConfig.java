@@ -1,103 +1,129 @@
 package com.example.securitewebback.security;
 
-import java.util.Arrays;
-import java.util.Collections;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
+import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
+
+import com.example.securitewebback.security.SsoConfig.JwtToUserConverter;
+
+import org.springframework.http.MediaType;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     private final ConcreteUserDetailsService myUserDetailsService;
-    private final FormLoginSuccesHandler loginSuccessHandler;
+    private final JwtToUserConverter jwtToUserConverter;
 
     public SecurityConfig(ConcreteUserDetailsService myUserDetailsService,
-                          FormLoginSuccesHandler loginSuccessHandler) {
+                          FormLoginSuccesHandler loginSuccessHandler,
+                          JwtToUserConverter jwtToUserConverter) {
         this.myUserDetailsService = myUserDetailsService;
-        this.loginSuccessHandler = loginSuccessHandler;
+        this.jwtToUserConverter = jwtToUserConverter;
+
+
     }
 
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    public SecurityFilterChain authServerSecurityFilterChain(HttpSecurity http)
+            throws Exception {
+        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+
+        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = http
+                .getConfigurer(OAuth2AuthorizationServerConfigurer.class);
+
+        RequestMatcher authorizationServerEndpointsMatcher = authorizationServerConfigurer
+                .getEndpointsMatcher();
+
+        http.securityMatcher(new OrRequestMatcher(
+                authorizationServerEndpointsMatcher,
+                request -> "/login".equals(request.getServletPath())));
+
+        authorizationServerConfigurer
+                .oidc(Customizer.withDefaults());
+
+
         http
-                // 1. Configuration du CORS
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // 2. Configuration du CSRF (Double Cookie Submit Pattern)
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                        .ignoringRequestMatchers(
-                                new AntPathRequestMatcher("/api/syndics/*/contact", "POST"),
-                                new AntPathRequestMatcher("/api/auth/login", "POST")
-                        ))
-
-                // Filtre pour forcer l'envoi du cookie CSRF à chaque requête
-                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
-
-                // 3. Gestion des accès non autorisés (API Style : renvoie 401 au lieu d'une page de login)
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-
-                // 4. Gestion de la session (Classique pour le mode Cookie/Session)
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-
-                // 5. Définition des règles de sécurité sur les URLs
-                .authorizeHttpRequests(auth -> auth
-                        // On ne met PAS /api/auth/login ici !
-                        .requestMatchers("/api/auth/register", "/api/auth/csrf").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/syndics").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/syndics/*/contact").permitAll()
-                        .requestMatchers("/error").permitAll()
-                        .anyRequest().authenticated())
-
-                // 6. Configuration du Login (Form-data)
+                .csrf(csrf -> csrf.disable())
+                .exceptionHandling(exceptions -> exceptions
+                        .defaultAuthenticationEntryPointFor(
+                                new LoginUrlAuthenticationEntryPoint(
+                                        "/login"),
+                                new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
                 .formLogin(form -> form
-                        .usernameParameter("email")
-                        .loginProcessingUrl("/api/auth/login")
-                        .successHandler(this.loginSuccessHandler)
-                        .failureHandler((req, res, exp) -> {
-                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            res.setContentType("application/json");
-                            res.getWriter().write("{\"status\": \"ERROR\", \"message\": \"Identifiants invalides\"}");
-                        }))
+                        .loginPage("/login")
+                        .loginProcessingUrl("/login")
+                        .permitAll());
 
-                // 7. Configuration du Logout
-                .logout(logout -> logout
-                        .logoutUrl("/api/auth/logout")
-                        .logoutSuccessHandler((request, response, authentication) -> {
-                            response.setStatus(HttpServletResponse.SC_OK);
-                        })
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID", "XSRF-TOKEN")
-                        .clearAuthentication(true));
 
         return http.build();
     }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.securityMatcher("/api/**");
+
+        http
+                .csrf(csrf -> csrf.disable())
+
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint())
+                        .accessDeniedHandler(new BearerTokenAccessDeniedHandler()))
+
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/error")
+                        .permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/syndics/**")
+                        .permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auth/register")
+                        .permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auth/owner")
+                        .hasRole("SYNDIC")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auth/change-password")
+                        .hasRole("PROPRIETAIRE")
+                        .anyRequest()
+                        .authenticated())
+
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtToUserConverter)))
+
+
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .logoutSuccessHandler((request, response,
+                                               authentication) -> {
+                            response.setStatus(HttpServletResponse.SC_OK);
+                        }));
+
+        return http.build();
+    }
+
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
@@ -109,31 +135,33 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        org.springframework.security.crypto.password.DelegatingPasswordEncoder passwordEncoder = (org.springframework.security.crypto.password.DelegatingPasswordEncoder) org.springframework.security.crypto.factory.PasswordEncoderFactories
+                .createDelegatingPasswordEncoder();
+        passwordEncoder.setDefaultPasswordEncoderForMatches(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder());
+        return passwordEncoder;
+    }
+
+
+    @Bean(name = "jwtAuthenticationTokenConverter")
+    public org.springframework.core.convert.converter.Converter<org.springframework.security.oauth2.jwt.Jwt, ? extends org.springframework.security.authentication.AbstractAuthenticationToken> jwtAuthenticationTokenConverter() {
+        org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter authoritiesConverter = new org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter();
+        authoritiesConverter.setAuthoritiesClaimName("role");
+        authoritiesConverter.setAuthorityPrefix("ROLE_");
+
+        org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter converter = new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        converter.setPrincipalClaimName("sub");
+        return converter;
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        // Autorise ton Front React
-        configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
-        // Méthodes HTTP autorisées
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        // Indispensable pour s'échanger les cookies (JSESSIONID / XSRF-TOKEN)
-        configuration.setAllowCredentials(true);
-        // Headers autorisés
-        configuration.setAllowedHeaders(Arrays.asList(
-                "Authorization",
-                "Content-Type",
-                "X-XSRF-TOKEN",
-                "Accept",
-                "X-Requested-With"
-        ));
-        // Headers exposés (pour que React puisse lire certains headers si besoin)
-        configuration.setExposedHeaders(Collections.singletonList("X-XSRF-TOKEN"));
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+    @org.springframework.context.annotation.Primary
+    public org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter jwtAuthenticationConverter() {
+        org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter converter = new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> jwtToUserConverter.convert(jwt).getAuthorities());
+        converter.setPrincipalClaimName("sub");
+        return converter;
     }
+
+
 }

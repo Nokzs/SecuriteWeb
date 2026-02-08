@@ -18,7 +18,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "users")
-@Inheritance(strategy = InheritanceType.JOINED) // Crée une table par enfant liée à celle-ci
+@Inheritance(strategy = InheritanceType.JOINED)
 @Getter
 @Setter
 
@@ -52,7 +52,7 @@ public abstract class User implements Serializable {
         this.password = password;
         this.role = role;
         this.telephone = telephone;
-        this.isFirstLogin = false;
+        this.isFirstLogin = true;
     }
 
     public UUID getId() {

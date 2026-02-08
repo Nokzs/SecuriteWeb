@@ -3,7 +3,6 @@ package com.example.securitewebback.appartements.entity;
 import java.util.UUID;
 
 import com.example.securitewebback.auth.entity.Proprietaire;
-import com.example.securitewebback.auth.entity.User;
 import com.example.securitewebback.building.entity.Building;
 
 import jakarta.persistence.Column;

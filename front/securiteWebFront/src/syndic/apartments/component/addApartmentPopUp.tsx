@@ -13,7 +13,7 @@ type AddApartmentPopUpProps = {
   apartmentToEdit?: Apartment | null;
 };
 
-const API_URL = import.meta.env.VITE_APIURL;
+import { API_BASE } from "../../../config/urls";
 
 export const AddApartmentPopUp = ({
   setShowAddForm,
@@ -29,20 +29,15 @@ export const AddApartmentPopUp = ({
       : null,
   );
   const [deletePhoto, setDeletePhoto] = useState(false);
-
-  // Initialisation des valeurs par défaut pour éviter le "undefined"
-  // On utilise des valeurs vides ou 0 au lieu de laisser undefined
   const [newApartment, setNewApartment] = useState<
-    Omit<Apartment, "buildingUuid" | "id" | "ownerId" | "photoFilename"> & {
-      ownerEmail?: string;
-    }
+    Omit<Apartment, "buildingUuid" | "id" | "ownerId" | "photoFilename">
   >({
     numero: apartmentToEdit?.numero ?? "",
     etage: apartmentToEdit?.etage ?? 0, // Initialisé à 0
     nombrePieces: apartmentToEdit?.nombrePieces ?? 1, // Initialisé à 1
     tantiemes: apartmentToEdit?.tantiemes ?? 0,
-    surface: apartmentToEdit?.surface ?? 0, // Initialisé à 0
-    ownerEmail: "",
+    surface: apartmentToEdit?.surface,
+    ownerEmail: apartmentToEdit?.ownerEmail ?? "",
   });
 
   const user = userStore((s) => s.user);
@@ -86,6 +81,7 @@ export const AddApartmentPopUp = ({
         "id" | "ownerId" | "buildingUuid" | "photoFilename"
       > & {
         photoFilename: string | null;
+        ownerEmail?: string;
       },
     ) => {
       if (!buildingId) throw new Error("Aucun immeuble sélectionné");
@@ -98,9 +94,10 @@ export const AddApartmentPopUp = ({
           tantiemes: formData.tantiemes,
           deletePhoto: deletePhoto,
           photoFilename: selectedFile ? selectedFile.name : null,
+          ownerEmail: formData.ownerEmail,
         };
         const response = await secureFetch(
-          `${API_URL}/apartment/${apartmentToEdit.id}`,
+          `${API_BASE}/apartment/${apartmentToEdit.id}`,
           {
             body: JSON.stringify(data),
             method: "PUT",
@@ -113,7 +110,7 @@ export const AddApartmentPopUp = ({
       }
 
       const data = { ...formData, buildingId: buildingId };
-      const response = await secureFetch(`${API_URL}/apartment`, {
+      const response = await secureFetch(`${API_BASE}/apartment`, {
         body: JSON.stringify(data),
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -179,7 +176,7 @@ export const AddApartmentPopUp = ({
           </p>
         </div>
 
-        {!isEditMode && <OwnerSearchByEmail setOwnerEmail={ownerEmailChange} />}
+        {<OwnerSearchByEmail setOwnerEmail={ownerEmailChange} />}
         <form onSubmit={handleSaveApartment} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -188,7 +185,7 @@ export const AddApartmentPopUp = ({
             <input
               className="w-full border border-slate-300 text-black p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               placeholder='ex: "A101"'
-              value={newApartment.numero} // Sera "" si vide, donc contrôlé
+              value={newApartment.numero}
               onChange={(e) =>
                 setNewApartment({ ...newApartment, numero: e.target.value })
               }
@@ -255,7 +252,6 @@ export const AddApartmentPopUp = ({
               <input
                 type="text"
                 className="w-full border border-slate-300 text-black p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                // 🛠️ CORRECTION
                 value={newApartment.ownerEmail ?? ""}
                 disabled
               />

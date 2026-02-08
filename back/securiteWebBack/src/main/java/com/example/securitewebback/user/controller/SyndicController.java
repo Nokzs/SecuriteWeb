@@ -27,7 +27,7 @@ import com.example.securitewebback.user.entity.ContactMessage;
 import com.example.securitewebback.user.service.SyndicService;
 
 @RestController
-@RequestMapping({"/api/syndics", "/syndics"})
+@RequestMapping({"/api/syndics"})
 public class SyndicController {
 
     private final SyndicService syndicService;
@@ -47,7 +47,6 @@ public class SyndicController {
         return ResponseEntity.ok(result);
     }
 
-    // Endpoint sécurisé pour récupérer les messages du syndic connecté
     @GetMapping("/messages")
     public ResponseEntity<Page<ContactMessageDto>> getMyMessages(
             Authentication auth,

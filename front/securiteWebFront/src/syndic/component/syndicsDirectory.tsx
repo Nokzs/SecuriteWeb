@@ -3,6 +3,8 @@ import { SyndicCard } from "./syndicCard";
 import { SyndicSearch } from "./syndicSearch";
 import { ContactSyndicForm } from "./contactSyndicForm";
 import { Loader } from "lucide-react";
+import { API_BASE } from "../../config/urls";
+import { useSecureFetch } from "../../hooks/secureFetch";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { PaginationController } from "../../component/PaginationController";
 import type { Page } from "../../types/pagination";
@@ -25,9 +27,8 @@ interface ContactFormData {
   message: string;
 }
 
-const API_URL = import.meta.env.VITE_APIURL;
-
 export function SyndicsDirectory() {
+  const secureFetch = useSecureFetch();
   const [selectedSyndic, setSelectedSyndic] = useState<Syndic | null>(null);
   const [showContactForm, setShowContactForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,13 +45,13 @@ export function SyndicsDirectory() {
     queryKey: ["syndics", filter, searchTerm],
     queryFn: async () => {
       const response = await fetch(
-        `${API_URL}/syndics?limit=${filter.limit}&page=${filter.page}&search=${encodeURIComponent(searchTerm)}`,
+        `${API_BASE}/syndics?limit=${filter.limit}&page=${filter.page}&search=${encodeURIComponent(searchTerm)}`,
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -76,8 +77,9 @@ export function SyndicsDirectory() {
     if (!selectedSyndic) return;
 
     try {
-      const response = await fetch(
-        `${API_URL}/syndics/${selectedSyndic.id}/contact`,
+      const response = await secureFetch(
+        `${API_BASE}/syndics/${selectedSyndic.id}/contact`,
+
         {
           method: "POST",
           headers: {
@@ -90,7 +92,7 @@ export function SyndicsDirectory() {
             phone: data.phone,
             message: data.message,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -111,7 +113,8 @@ export function SyndicsDirectory() {
     );
   }
 
-  const errorMessage = error instanceof Error ? error.message : "Une erreur est survenue";
+  const errorMessage =
+    error instanceof Error ? error.message : "Une erreur est survenue";
 
   return (
     <div className="w-full">
@@ -130,7 +133,8 @@ export function SyndicsDirectory() {
         <>
           <div className="mb-6 max-w-6xl mx-auto">
             <p className="text-gray-600 text-center">
-              {data.totalElements} syndic{data.totalElements !== 1 ? "s" : ""} trouvé
+              {data.totalElements} syndic{data.totalElements !== 1 ? "s" : ""}{" "}
+              trouvé
               {data.totalElements !== 1 ? "s" : ""}
             </p>
           </div>

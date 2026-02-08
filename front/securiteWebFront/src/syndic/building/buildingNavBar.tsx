@@ -13,7 +13,7 @@ export const BuildingNavBar = () => {
           <StepBack className="mr-3" />
         </NavLink>
         <NavLink
-          to={`/syndic/building/${buildingId}/appartments`}
+          to={`/syndic/building/${buildingId}/apartments`}
           className={({ isActive }) =>
             `flex items-center px-4 py-3 rounded-lg transition-colors ${
               isActive
@@ -22,11 +22,11 @@ export const BuildingNavBar = () => {
             }`
           }
         >
-          appartements
+          Appartements
         </NavLink>
 
         <NavLink
-          to={`/syndic/building/${buildingId}/residents`}
+          to={`/syndic/building/${buildingId}/expenses`}
           className={({ isActive }) =>
             `flex items-center px-4 py-3 rounded-lg transition-colors ${
               isActive
@@ -35,7 +35,7 @@ export const BuildingNavBar = () => {
             }`
           }
         >
-          Résidents
+          Factures
         </NavLink>
       </div>
     </NavBar>

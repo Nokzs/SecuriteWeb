@@ -23,6 +23,7 @@ public abstract class UserDto {
     private String email;
     private String telephone;
     private Role role;
+    private boolean isFirstLogin;
 
     public static UserDto fromEntity(User user) {
         if (user instanceof Syndic s) {

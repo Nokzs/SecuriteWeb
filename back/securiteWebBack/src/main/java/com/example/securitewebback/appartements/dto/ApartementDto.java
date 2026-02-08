@@ -16,8 +16,8 @@ public record ApartementDto(
         Integer tantiemes,
         String photoFilename,
         String signedLink,
-        BuildingSimpleDto building
-) {
+        BuildingSimpleDto building,
+        String ownerEmail) {
     public static ApartementDto fromEntity(Apartment apartment, String signedLink) {
         return new ApartementDto(
                 apartment.getId(),
@@ -28,7 +28,7 @@ public record ApartementDto(
                 apartment.getTantiemes(), // Assure-toi que c'est bien un Integer dans ton Entité aussi
                 apartment.getPhotoFilename(),
                 signedLink,
-                BuildingSimpleDto.fromEntity(apartment.getBuilding())
-        );
+                BuildingSimpleDto.fromEntity(apartment.getBuilding()),
+                apartment.getOwner() != null ? apartment.getOwner().getEmail() : null);
     }
 }

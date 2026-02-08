@@ -1,6 +1,7 @@
 package com.example.securitewebback.guard;
 
 import com.example.securitewebback.auth.entity.Role;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -42,8 +43,11 @@ public class ApartmentSecurity {
         return false;
     }
 
-    public boolean canAccessToBuilding(UUID buildingId, Authentication authentication) {
-        CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
+    public boolean canAccessToBuilding(UUID buildingId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof CustomUserDetails user)) {
+            return false;
+        }
         Building building = buildingRepository.findById(buildingId).orElse(null);
 
         if (building == null) return false;

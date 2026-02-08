@@ -1,4 +1,14 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis-local
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
   mysql-db:
     image: mysql:8.0
     container_name: mysql-local
@@ -17,6 +27,7 @@ services:
       timeout: 10s # Laisser 10s à la commande pour répondre
       retries: 15 # Monter à 15 essais (soit 150 secondes de patience)
       start_period: 40s # Ne même pas essayer de tester pendant les 40 premières secondes
+
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     container_name: minio-server
@@ -41,9 +52,12 @@ services:
     image: maven:3.9-eclipse-temurin-21
     container_name: spring-api-dev
     volumes:
-      - ./back/securiteWebBack/:/app # On monte ton code source
+      - ./back/securiteWebBack/:/app
+      - maven_repo:/root/.m2
+    extra_hosts:
+      - "auth.local:host-gateway"
     working_dir: /app
-    command: mvn spring-boot:run # On utilise Maven pour lancer l'app
+    command: mvn spring-boot:run
     ports:
       - "8080:8080"
     depends_on:
@@ -51,16 +65,113 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8080/.well-known/openid-configuration",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/nom_de_ta_base?createDatabaseIfNotExist=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      # Single issuer used by both browser and gateway in docker-compose.
+      - AUTH_ISSUER=${AUTH_ISSUER:-http://auth.local:8080}
+      - OAUTH2_GATEWAY_CLIENT_ID=${OAUTH2_GATEWAY_CLIENT_ID:-${OAUTH2_CLIENT_ID:-gateway-client}} ## vous pouvez laisser par défaut
+      - OAUTH2_GATEWAY_CLIENT_SECRET=${OAUTH2_GATEWAY_CLIENT_SECRET:-${OAUTH2_CLIENT_SECRET:-secret-secret}} ##pareil
+      - GATEWAY_PORT=${GATEWAY_PORT:-8082} # port de la gateway
+      - GATEWAY_PUBLIC_BASE_URL=${GATEWAY_PUBLIC_BASE_URL:-http://localhost:${GATEWAY_PORT}}
+
+      ## Doit avoir ce format,
+      - OAUTH2_GATEWAY_REDIRECT_URIS=${OAUTH2_GATEWAY_REDIRECT_URIS:-http://localhost:${GATEWAY_PORT}/login/oauth2/code/${OAUTH2_CLIENT_ID:-gateway-client}}
+      #Pareil,
+      - OAUTH2_POST_LOGOUT_REDIRECT_URIS=${OAUTH2_POST_LOGOUT_REDIRECT_URIS:-http://localhost:3000/,http://localhost:3001/}
+        # adresse ip du minio
       - MINIO_INTERNAL_URL=http://minio:9000
+        # adresse du reverse proxy
       - MINIO_EXTERNAL_URL=http://localhost:9000
       - MINIO_ACCESS_KEY=admin
       - MINIO_SECRET_KEY=password123
       - MINIO_BUCKET_NAME=documents-copro
+
+  backendb:
+    image: maven:3.9-eclipse-temurin-21
+    container_name: spring-api-devB
+    volumes:
+      - ./walletBack/:/app
+    extra_hosts:
+      - "auth.local:host-gateway"
+    working_dir: /app
+    command: mvn spring-boot:run
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/baseWallet?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      # Single issuer used by both browser and gateway in docker-compose.
+      - AUTH_ISSUER=${AUTH_ISSUER:-http://auth.local:8080}
+
+  gateway:
+    build:
+      context: ./gateway-bff
+      dockerfile: Dockerfile
+    container_name: gateway-bff
+    ports:
+      - "${GATEWAY_PORT:-8082}:${GATEWAY_PORT:-8082}"
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    extra_hosts:
+      - "auth.local:host-gateway"
+    environment:
+      #port de la gateway
+      - GATEWAY_PORT=${GATEWAY_PORT:-8082}
+      ##adresse du backend cote interne
+      - APPA_BASE_URI=${APPA_BASE_URI:-http://backend:8080}
+      - APPB_BASE_URI=${APPB_BASE_URI:-http://backendb:8080}
+      #laisser par défaut
+      - APPA_PATH_PREFIX=${APPA_PATH_PREFIX:-appA}
+      - APPB_PATH_PREFIX=${APPB_PATH_PREFIX:-appB}
+
+      ##adresse du backend cote interne
+      - MONOLITH_BASE_URI=${MONOLITH_BASE_URI:-http://backend:8080}
+      - MONOLITH_BASE_URIB=${MONOLITH_BASE_URIB:-http://backendb:8080}
+
+      ##port front A
+      - FRONT_PORT=${FRONT_PORT:-3000}
+      - FRONT_PORTB=${FRONT_PORTB:-3001}
+      #adresse front A cote navigateur
+      - FRONT_PUBLIC_BASE_URL=${FRONT_PUBLIC_BASE_URL:-http://localhost:${FRONT_PORT}}
+      - FRONT_PUBLIC_BASE_URLB=${FRONT_PUBLIC_BASE_URLB:-http://localhost:${FRONT_PORTB}}
+      - CORS_ALLOWED_ORIGINS=${FRONT_PUBLIC_BASE_URL},${FRONT_PUBLIC_BASE_URLB}
+
+      #Doit être authorisé
+      - APP_REDIRECT_DEFAULT=${APP_REDIRECT_DEFAULT:-http://localhost:${FRONT_PORT}/}
+      - APP_REDIRECT_APPA=${APP_REDIRECT_APPA:-http://localhost:${FRONT_PORT}/}
+      - APP_REDIRECT_APPB=${APP_REDIRECT_APPB:-http://localhost:${FRONT_PORTB}/}
+        # The issuer must be browser-reachable, but the gateway container must also reach it.
+      # Use host.docker.internal (mapped to host-gateway) so the container can call the host-published port 8080.
+      - OAUTH2_ISSUER_URI=${OAUTH2_ISSUER_URI:-http://auth.local:8080}
+      # doit correspondre avec plus haut
+      - OAUTH2_CLIENT_ID=${OAUTH2_CLIENT_ID:-gateway-client}
+      - OAUTH2_CLIENT_SECRET=${OAUTH2_CLIENT_SECRET:-secret-secret}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
 
   frontend:
     image: node:20-alpine
@@ -68,16 +179,31 @@ services:
     working_dir: /app
     volumes:
       - ./front/securiteWebFront/:/app
-      # On crée un volume anonyme pour node_modules afin qu'il ne soit pas écrasé par ton PC
       - /app/node_modules
     ports:
-      - "3000:5173"
+      - "${FRONT_PORT:-3000}:5173"
     environment:
-      - VITE_API_URL=http://localhost:8080
-    # On ajoute "npm install" avant le "npm run dev"
+      #adresse de la gateway
+      - VITE_GATEWAY_BASE=${VITE_GATEWAY_BASE:-http://localhost:8082}
+      - VITE_APIURL=${VITE_APIURL:-http://localhost:8082/appA/api}
     command: sh -c "npm install && npm run dev -- --host"
     depends_on:
-      - backend
+      - gateway
+
+  frontendB:
+    image: node:20-alpine
+    container_name: vite-front-devB
+    working_dir: /app
+    volumes:
+      - ./walletFront/:/app
+    ports:
+      - "${FRONT_PORTB:-3001}:5173"
+    environment:
+      - VITE_GATEWAY_BASE=${VITE_GATEWAY_BASE:-http://localhost:8082}
+      - VITE_APIURL=${VITE_APIURL:-http://localhost:8082/appB/api}
+    command: sh -c "npm install && npm run dev -- --host"
+    depends_on:
+      - gateway
 
   # --- SCRIPT AUTO-CREATION BUCKET ---
   createbuckets:
@@ -97,3 +223,5 @@ services:
 volumes:
   minio_data:
   mysql_data: # <--- Déclarez
+  maven_repo:
+  redis_data:

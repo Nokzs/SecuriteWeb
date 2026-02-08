@@ -41,14 +41,13 @@ public class appartementsController {
         this.minioService = minioService;
     }
 
-    @PreAuthorize("@apartmentSecurity.canAccessToBuilding(#buildingId, authentication)")
+    @PreAuthorize("@apartmentSecurity.canAccessToBuilding(#buildingId)")
     @GetMapping("/{buildingId}")
     public ResponseEntity<ApartementAndBuildingDto> getApartments(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int limit,
             @RequestParam(required = false) String search,
-            @PathVariable("buildingId") UUID buildingId,
-            Authentication auth) {
+            @PathVariable("buildingId") UUID buildingId) {
 
         Pageable pageable = PageRequest.of(page, limit);
 
@@ -75,7 +74,7 @@ public class appartementsController {
                     apt.id(), apt.numero(), apt.etage(), apt.surface(),
                     apt.nombrePieces(), apt.tantiemes(), apt.photoFilename(),
                     signedUrl, // <--- C'est ici que le lien magique arrive au Front !
-                    apt.building()
+                    apt.building(), apt.ownerEmail()
             );
         });
 
@@ -83,9 +82,9 @@ public class appartementsController {
         return ResponseEntity.ok(new ApartementAndBuildingDto(initialData.building(), mappedApartments));
     }
 
-    @PreAuthorize("@apartmentSecurity.canAccessToBuilding(#createAppartementDto.buildingId, authentication)")
+    @PreAuthorize("@apartmentSecurity.canAccessToBuilding(#createAppartementDto.buildingId)")
     @PostMapping
-    public ResponseEntity<ApartementDto> createApartement(@RequestBody CreateAppartementDto createAppartementDto, Authentication auth) {
+    public ResponseEntity<ApartementDto> createApartement(@RequestBody CreateAppartementDto createAppartementDto) {
 
         Apartment createdApartment = apartmentService.createApartment(createAppartementDto);
         String signedLink = null;
@@ -109,6 +108,7 @@ public class appartementsController {
     }
 
 
+    @PreAuthorize("@apartmentSecurity.canAccessToBuilding(#createAppartementDto.buildingId)")
     @PutMapping("/{id}")
     public ResponseEntity<ApartementDto> updateApartment(
             @PathVariable UUID id,
@@ -131,6 +131,7 @@ public class appartementsController {
         return ResponseEntity.ok(ApartementDto.fromEntity(apartment, uploadUrl));
     }
 
+    @PreAuthorize("HasRole('PROPRIETAIRE')")
     @GetMapping
     public ResponseEntity<Page<ApartementDto>> getOwnerProperties(
             Authentication authentication,

@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { UserPlus, X, Loader2, Copy, CheckCircle2 } from "lucide-react";
 import { useSecureFetch } from "../../../hooks/secureFetch";
 
+import { API_BASE } from "../../../config/urls";
 type OwnerFormValues = {
   nom: string;
   prenom: string;
@@ -74,10 +75,9 @@ export const CreateOwnerForm = ({
 
   const mutation = useMutation({
     mutationFn: async (data: OwnerFormValues) => {
-      const API_URL = import.meta.env.VITE_APIURL;
       const password = generateEasyPassword();
 
-      const response = await secureFetch(`${API_URL}/auth/owner`, {
+      const response = await secureFetch(`${API_BASE}/auth/owner`, {
         method: "POST",
         body: JSON.stringify({ ...data, password }),
         headers: { "Content-Type": "application/json" },
@@ -116,27 +116,56 @@ export const CreateOwnerForm = ({
           </div>
 
           <div className="relative group">
-            <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 flex items-center justify-between">
-              <code className="text-2xl font-mono font-bold text-indigo-600 tracking-widest">
-                {credentials.email}
-              </code>
-              <code className="text-2xl font-mono font-bold text-indigo-600 tracking-widest">
-                {credentials.password}
-              </code>
-              <button
-                onClick={() =>
-                  navigator.clipboard.writeText(credentials.password)
-                }
-                className="p-2 hover:bg-indigo-100 rounded-lg text-indigo-400 transition-colors"
-                title="Copier"
-              >
-                <Copy size={20} />
-              </button>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-slate-400 uppercase mb-1">
+                    Email
+                  </span>
+                  <code className="text-xl font-mono font-bold text-indigo-600 tracking-tight">
+                    {credentials.email}
+                  </code>
+                </div>
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(credentials.email)
+                  }
+                  className="p-2 hover:bg-indigo-100 rounded-lg text-indigo-400 transition-colors"
+                  title="Copier l'email"
+                >
+                  <Copy size={20} />
+                </button>
+              </div>
+
+              {/* Bloc Mot de passe */}
+              <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-slate-400 uppercase mb-1">
+                    Mot de passe
+                  </span>
+                  <code className="text-xl font-mono font-bold text-indigo-600 tracking-widest">
+                    {credentials.password}
+                  </code>
+                </div>
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(credentials.password)
+                  }
+                  className="p-2 hover:bg-indigo-100 rounded-lg text-indigo-400 transition-colors"
+                  title="Copier le mot de passe"
+                >
+                  <Copy size={20} />
+                </button>
+              </div>
+            </div>{" "}
           </div>
 
           <button
-            onClick={() => onSuccess(mutation.data)}
+            onClick={() => {
+              setCredentials(null);
+              onSuccess(mutation.data);
+              return;
+            }}
             className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-black transition-all shadow-lg"
           >
             J'ai noté le mot de passe
@@ -187,7 +216,7 @@ export const CreateOwnerForm = ({
           <label className="text-sm font-medium text-slate-600">E-mail</label>
           <input
             {...register("email")}
-            className="w-full rounded-lg text-black border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed pointer-coarse:"
+            className="w-full rounded-lg text-black border-slate-200 bg-slate-50 text-black pointer-coarse:"
           />
         </div>
 

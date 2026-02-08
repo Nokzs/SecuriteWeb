@@ -1,11 +1,11 @@
 import { Building2, ChevronRight, MapPin, AlertCircle } from "lucide-react";
-
-// 1. On ajoute signedLink à l'interface
+import { API_BASE } from "../../config/urls";
+// Interface alignée STRICTEMENT avec le Backend (pas de zipcode/city)
 interface Property {
   id: string;
   numero: string;
   photoFilename?: string | null;
-  signedLink?: string | null; 
+  signedLink?: string | null;
   buildingName: string;
   buildingAddress: string;
 }
@@ -15,8 +15,11 @@ interface OwnerPropertyCardProps {
   onIncidentClick: () => void;
 }
 
-export function OwnerPropertyCard({ property, onIncidentClick }: OwnerPropertyCardProps) {
-  
+export function OwnerPropertyCard({
+  property,
+  onIncidentClick,
+}: OwnerPropertyCardProps) {
+
   const imageUrl = property.signedLink || null;
 
   return (
@@ -29,7 +32,7 @@ export function OwnerPropertyCard({ property, onIncidentClick }: OwnerPropertyCa
             <img 
               src={imageUrl} 
               alt={`Appartement ${property.numero}`} 
-              className="w-full h-full object-cover rounded-md" 
+              className="w-full h-full object-cover rounded-md"
               // Petit fix au cas où le lien expire entre temps
               onError={(e) => (e.currentTarget.style.display = 'none')}
             />

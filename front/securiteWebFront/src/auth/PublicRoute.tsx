@@ -1,18 +1,98 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { userStore } from "../store/userStore";
+import { useQuery } from "@tanstack/react-query";
+
+import { GATEWAY_BASE } from "../config/urls";
+import { userStore, type User } from "../store/userStore";
+import { useEffect } from "react";
+
+type GatewayUser = {
+  authenticated?: boolean;
+  roles?: string[];
+  sub?: string;
+  role?: string;
+  isFirstLogin?: boolean;
+};
+
+const toAppUser = (gatewayUser: GatewayUser): User | null => {
+  if (!gatewayUser?.authenticated) return null;
+
+  const roles = gatewayUser.roles ?? [];
+  const role = gatewayUser.role;
+
+  if (role === "PROPRIETAIRE" || roles.includes("ROLE_PROPRIETAIRE")) {
+    return {
+      uuid: gatewayUser.sub,
+      role: "PROPRIETAIRE",
+      isFirstLogin: gatewayUser.isFirstLogin,
+      authenticated: true,
+    };
+  }
+
+  if (role === "SYNDIC" || roles.includes("ROLE_SYNDIC")) {
+    return {
+      uuid: gatewayUser.sub,
+      role: "SYNDIC",
+      authenticated: true,
+    };
+  }
+
+  return { uuid: gatewayUser.sub, role: "", authenticated: true };
+};
 
 export function PublicRoute() {
   const user = userStore((s) => s.user);
   const get = userStore((s) => s.get);
+  const setUser = userStore((s) => s.setUser);
 
-  if (user) {
-    const parsedUser = get(user);
+  const query = useQuery({
+    queryKey: ["gatewayUser"],
+    queryFn: async (): Promise<User | null> => {
+      const response = await fetch(`${GATEWAY_BASE}/auth/user`, {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!response.ok) return null;
+      const gatewayUser = (await response.json()) as GatewayUser;
+      return toAppUser(gatewayUser);
+    },
+    retry: false,
+    staleTime: 15_000,
+  });
 
-    if (parsedUser?.role === "PROPRIETAIRE") {
-      return <Navigate to="/owner" replace />;
+  useEffect(() => {
+    if (query.isSuccess) {
+      const currentUser = get(user);
+      const nextUser = query.data;
+
+      if (
+        currentUser?.role !== nextUser?.role ||
+        currentUser?.isFirstLogin !== nextUser?.isFirstLogin ||
+        currentUser?.uuid !== nextUser?.uuid
+      ) {
+        setUser(nextUser);
+      }
     }
-    if (parsedUser?.role === "SYNDIC") {
+  }, [query.isSuccess, query.data, user, get, setUser]); // Se déclenche seulement quand query change
+
+  if (query.isLoading) return null;
+
+  // Utiliser directement query.data ou le store mis à jour
+  const parsedUser = query.data;
+
+  const isInternalPage =
+    location.pathname.startsWith("/syndic") ||
+    location.pathname.startsWith("/owner");
+
+  if (parsedUser && !isInternalPage) {
+    if (parsedUser.role === "SYNDIC") {
       return <Navigate to="/syndic" replace />;
+    }
+
+    if (parsedUser.role === "PROPRIETAIRE") {
+      if (parsedUser.isFirstLogin) {
+        return <Navigate to="/owner/first-login" replace />;
+      }
+      return <Navigate to="/owner" replace />;
     }
   }
 

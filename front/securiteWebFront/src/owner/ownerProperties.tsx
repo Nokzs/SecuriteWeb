@@ -7,7 +7,7 @@ import { userStore, type UserStoreType } from "../store/userStore";
 import { OwnerPropertyCard } from "./component/ownerPropertyCard";
 import { IncidentFormModal } from "./component/incidentFormModal";
 import type { Page } from "../types/pagination";
-
+import { API_BASE } from "../config/urls";
 interface IncidentResponse {
   id: string;
   photoUrls?: string[];
@@ -22,8 +22,6 @@ interface Property {
   buildingAddress: string;
 }
 
-const API_URL = import.meta.env.VITE_APIURL;
-
 export function OwnerProperties() {
   const secureFetch = useSecureFetch();
   const uploadFile = useUploadFile();
@@ -32,19 +30,20 @@ export function OwnerProperties() {
   const parsedUser = user ? get(user) : null;
 
   const [showIncidentForm, setShowIncidentForm] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(
+    null,
+  );
+
   const [filter] = useState<{ limit: number; page: number }>({
     limit: 6,
     page: 0,
   });
 
-  // --- 1. Récupération des Logements ---
   const { data, isLoading } = useQuery<Page<Property>>({
     queryKey: ["ownerProperties", parsedUser?.uuid, filter],
     queryFn: async () => {
       const res = await secureFetch(
-        `${API_URL}/apartment?limit=${filter.limit}&page=${filter.page}`
+        `${API_BASE}/apartment?limit=${filter.limit}&page=${filter.page}`,
       );
       if (!res.ok) throw new Error("Erreur fetch properties");
       return (await res.json()) as Page<Property>;
@@ -78,7 +77,7 @@ export function OwnerProperties() {
         photoFilenames: formData.photos.map((f) => f.name),
       };
 
-      const response = await secureFetch(`${API_URL}/incidents`, {
+      const response = await secureFetch(`${API_BASE}/incidents`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -100,14 +99,14 @@ export function OwnerProperties() {
       // C. Reset
       setShowIncidentForm(false);
       setSelectedProperty(null);
-      
     } catch (err) {
       console.error(err);
       throw err instanceof Error ? err : new Error("Une erreur est survenue");
     }
   };
 
-  if (isLoading) return <span className="loading loading-spinner loading-lg"></span>;
+  if (isLoading)
+    return <span className="loading loading-spinner loading-lg"></span>;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -115,7 +114,8 @@ export function OwnerProperties() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-800">Mes logements</h1>
         <p className="text-slate-500">
-          Consultez la liste de vos biens et signalez des incidents si nécessaire.
+          Consultez la liste de vos biens et signalez des incidents si
+          nécessaire.
         </p>
       </div>
 
@@ -125,7 +125,8 @@ export function OwnerProperties() {
         <div>
           <h3 className="font-semibold text-blue-900">Besoin d'aide ?</h3>
           <p className="text-blue-800 text-sm mt-1">
-            Cliquez sur le bouton "Signaler un incident" sur une carte pour ouvrir un ticket.
+            Cliquez sur le bouton "Signaler un incident" sur une carte pour
+            ouvrir un ticket.
           </p>
         </div>
       </div>

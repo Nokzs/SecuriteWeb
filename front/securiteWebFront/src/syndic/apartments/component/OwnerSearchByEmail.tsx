@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { UserPlus, Search, Loader2 } from "lucide-react";
 import { CreateOwnerForm } from "./CreateOwnerForm";
 import { useSecureFetch } from "../../../hooks/secureFetch";
+import { API_BASE } from "../../../config/urls";
 type OwnerSearchByEmailProps = {
   setOwnerEmail: (email: string) => void;
 };
@@ -13,7 +14,6 @@ export const OwnerSearchByEmail = ({
   const [email, setEmail] = useState("");
   const [showResult, setShowResult] = useState(true);
   const secureFetch = useSecureFetch();
-  const API_URL = import.meta.env.VITE_APIURL;
   const [showCreateOwnerModal, setShowCreateOwnerModal] = useState(false);
   const {
     data: foundOwner,
@@ -24,7 +24,7 @@ export const OwnerSearchByEmail = ({
   } = useQuery({
     queryKey: ["ownerSearch", email],
     queryFn: async () => {
-      const res = await secureFetch(`${API_URL}/user/by-email?email=${email}`);
+      const res = await secureFetch(`${API_BASE}/user/by-email?email=${email}`);
       if (!res.ok) throw new Error("Owner not found");
       return res.json();
     },
@@ -110,7 +110,10 @@ export const OwnerSearchByEmail = ({
         <CreateOwnerForm
           initialEmail={email || ""}
           onCancel={() => setShowCreateOwnerModal(false)}
-          onSuccess={(owner) => setOwnerEmail(owner.email)}
+          onSuccess={(owner) => {
+            setShowCreateOwnerModal(false);
+            setOwnerEmail(owner.email);
+          }}
         />
       )}
     </div>

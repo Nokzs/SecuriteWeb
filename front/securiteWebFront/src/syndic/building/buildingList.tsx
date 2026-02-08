@@ -8,6 +8,8 @@ import type { Page } from "../../types/pagination";
 import { PaginationController } from "../../component/PaginationController";
 import { AddBuildingPopUp } from "./addBuildingPopUp";
 import { SearchBar } from "../component/SearchBar";
+
+import { API_BASE } from "../../config/urls";
 export interface Building {
   id: string;
   name: string;
@@ -17,7 +19,6 @@ export interface Building {
   totalTantieme: number | null;
   currentTantieme: number | null;
 }
-const API_URL = import.meta.env.VITE_APIURL;
 export const BuildingsList = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,7 +37,7 @@ export const BuildingsList = () => {
     queryKey: ["buildings", parsedUser?.uuid, filter, searchTerm],
     queryFn: async () => {
       const res = await secureFetch(
-        `${API_URL}/building?limit=${filter.limit}&page=${filter.page}&search=${encodeURIComponent(searchTerm)}`,
+        `${API_BASE}/building?limit=${filter.limit}&page=${filter.page}&search=${encodeURIComponent(searchTerm)}`,
       );
 
       if (!res.ok) {

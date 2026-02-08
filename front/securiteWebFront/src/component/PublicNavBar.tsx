@@ -16,12 +16,18 @@ export function PublicNavBar() {
         </Link>
 
         <div className="hidden md:flex gap-6">
-          <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium transition">
+          <Link
+            to="/"
+            className="text-gray-700 hover:text-blue-600 font-medium transition"
+          >
             Accueil
           </Link>
-          <Link to="/login" className="text-gray-700 hover:text-blue-600 font-medium transition">
+          <a
+            href={`${import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082"}/login?app=appA`}
+            className="text-gray-700 hover:text-blue-600 font-medium transition"
+          >
             Connexion
-          </Link>
+          </a>
           <Link
             to="/register"
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium"
@@ -39,7 +45,7 @@ export function PublicNavBar() {
 
         {isMenuOpen && (
           <div className="absolute top-16 left-0 right-0 bg-white shadow-lg md:hidden z-50">
-            <div className="flex flex-col p-4 gap-4">
+            <div className="flex flex-col p-4 gap-4 justify-center">
               <Link
                 to="/"
                 className="text-gray-700 hover:text-blue-600 font-medium transition py-2"
@@ -47,13 +53,13 @@ export function PublicNavBar() {
               >
                 Accueil
               </Link>
-              <Link
-                to="/login"
+              <a
+                href={`${import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082"}/login?app=appA`}
                 className="text-gray-700 hover:text-blue-600 font-medium transition py-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Connexion
-              </Link>
+              </a>
               <Link
                 to="/register"
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-center"

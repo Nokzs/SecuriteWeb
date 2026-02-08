@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Connexion | Portail</title>
+    <style>
+      :root {
+        --bg: #f8fafc; /* slate-50 */
+        --card: #ffffff;
+        --text-main: #1e293b; /* slate-800 */
+        --text-muted: #64748b; /* slate-500 */
+        --primary: #4f46e5; /* indigo-600 */
+        --primary-hover: #4338ca; /* indigo-700 */
+        --danger: #ef4444; /* red-500 */
+        --border: #e2e8f0; /* slate-200 */
+        --ring: #e0e7ff; /* indigo-100 */
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background-color: var(--bg);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 448px; /* max-w-md */
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 1rem; /* rounded-2xl */
+        box-shadow:
+          0 20px 25px -5px rgba(0, 0, 0, 0.1),
+          0 10px 10px -5px rgba(0, 0, 0, 0.04); /* shadow-xl */
+        padding: 2rem; /* p-8 */
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .title {
+        margin: 0;
+        font-size: 1.5rem; /* text-2xl */
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .subtitle {
+        margin-top: 0.5rem;
+        color: var(--text-muted);
+        font-size: 1rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.25rem; /* space-y-5 */
+      }
+
+      label {
+        display: block;
+        font-size: 0.875rem; /* text-sm */
+        font-weight: 500;
+        color: #334155; /* slate-700 */
+        margin-bottom: 0.25rem;
+      }
+
+      input {
+        width: 100%;
+        padding: 0.75rem; /* p-3 */
+        border-radius: 0.75rem; /* rounded-xl */
+        border: 1px solid var(--border);
+        background: white;
+        color: black;
+        font-size: 1rem;
+        transition: all 0.2s;
+        outline: none;
+      }
+
+      input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--ring);
+      }
+
+      input::placeholder {
+        color: #94a3b8;
+      }
+
+      .alert {
+        padding: 0.75rem;
+        border-radius: 0.75rem;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+        border: 1px solid;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .alert-error {
+        background-color: #fef2f2; /* red-50 */
+        border-color: #fee2e2; /* red-100 */
+        color: #b91c1c; /* red-700 */
+      }
+
+      .alert-success {
+        background-color: #f0fdf4;
+        border-color: #dcfce7;
+        color: #15803d;
+      }
+
+      button {
+        width: 100%;
+        padding: 0.75rem;
+        border: 0;
+        border-radius: 0.75rem;
+        background-color: var(--primary);
+        color: white;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2);
+        margin-top: 1rem;
+      }
+
+      button:hover {
+        background-color: var(--primary-hover);
+      }
+
+      button:active {
+        transform: scale(0.98);
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 1.5rem;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+      }
+
+      .link {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="card">
+      <div class="header">
+        <h1 class="title">Bienvenue</h1>
+        <p class="subtitle">Veuillez vous connecter à votre compte</p>
+      </div>
+
+      <div class="alert alert-error" th:if="${param.error}">
+        <strong>⚠</strong> Identifiants invalides.
+      </div>
+
+      <div class="alert alert-success" th:if="${param.logout}">
+        <strong>✓</strong> Déconnexion réussie.
+      </div>
+
+      <form method="post" th:action="@{/login}">
+        <div class="form-group">
+          <label for="username">Email</label>
+          <input
+            id="username"
+            name="username"
+            type="email"
+            placeholder="nom@exemple.com"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+
+        <button type="submit">Se connecter</button>
+      </form>
+
+      <div class="footer">
+        Pas encore de compte ?
+        <a href="/register" class="link">S'inscrire</a>
+      </div>
+    </main>
+  </body>
+</html>
