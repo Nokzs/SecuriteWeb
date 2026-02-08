@@ -21,28 +21,35 @@ import java.util.UUID;
 @RequestMapping("/api/operation")
 public class OperationController {
 
-    @Autowired
-    private OperationService operationService;
+        @Autowired
+        private OperationService operationService;
 
-    @GetMapping
-    public Page<OperationDto> getOperation(
-            @AuthenticationPrincipal Jwt jwt, // Utilise Jwt au lieu de Authentication
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int limit) {
+        @GetMapping
+        public Page<OperationDto> getOperation(
+                        @AuthenticationPrincipal Jwt jwt,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "5") int limit) {
 
-        // Avec l'objet Jwt, on utilise getSubject()
-        String sub = jwt.getSubject(); 
+                // Avec l'objet Jwt, on utilise getSubject()
+                String sub = jwt.getSubject();
 
-        Pageable pageable = PageRequest.of(page, limit, Sort.by("date").descending());
+                Pageable pageable = PageRequest.of(page, limit, Sort.by("date").descending());
 
-        Page<Operation> operationsPage = operationService.getOperations(UUID.fromString(sub), pageable);
-        
-        return operationsPage.map(op -> new OperationDto(
-                op.getOrigin().getEmail(),
-                op.getAmount(),
-                op.getDate(),
-                op.getSign().name(),
-                op.getLabel(),
-                op.getReceiver() != null ? op.getReceiver().getEmail() : null));
-    }
+                Page<Operation> operationsPage = operationService.getOperations(UUID.fromString(sub), pageable);
+
+                return operationsPage.map(op -> {
+                        String displaySign = op.getReceiver() == null ? "PLUS"
+                                        : ((op.getOrigin() != null
+                                                        && op.getOrigin().getSsoId().equals(UUID.fromString(sub)))
+                                                                        ? "MINUS"
+                                                                        : "PLUS");
+                        return new OperationDto(
+                                        op.getOrigin() != null ? op.getOrigin().getEmail() : "Système/Gateway",
+                                        op.getAmount(),
+                                        op.getDate(),
+                                        displaySign,
+                                        op.getLabel(),
+                                        op.getReceiver() != null ? op.getReceiver().getEmail() : null);
+                });
+        }
 }

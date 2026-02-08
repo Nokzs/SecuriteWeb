@@ -110,10 +110,5 @@ public class RegistrationController {
 
         userService.changePassword(userDetails.getUser(), dto.newPassword());
 
-        try {
-            successHandler.onAuthenticationSuccess(request, response, authentication);
-        } catch (IOException e) {
-            throw new RuntimeException("Erreur lors de la réauthentification", e);
-        }
     }
 }

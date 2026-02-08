@@ -1,7 +1,6 @@
 import { Outlet } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-
-import { LOGIN_URL, API_BASE } from "../config/urls";
+import { useState, useEffect } from "react";
+import { LOGIN_URL, GATEWAY_BASE } from "../config/urls";
 import { userStore, type User } from "../store/userStore";
 
 type GatewayUser = {
@@ -11,7 +10,6 @@ type GatewayUser = {
   role?: string;
   isFirstLogin?: boolean;
 };
-
 const toAppUser = (gatewayUser: GatewayUser): User | null => {
   if (!gatewayUser?.authenticated) return null;
 
@@ -32,58 +30,31 @@ const toAppUser = (gatewayUser: GatewayUser): User | null => {
       uuid: gatewayUser.sub,
       role: "SYNDIC",
       authenticated: true,
+      isFirstLogin: false,
     };
   }
 
   return { uuid: gatewayUser.sub, role: "", authenticated: true };
 };
-
 export function AuthRoute() {
-  const user = userStore((s) => s.user);
-  const get = userStore((s) => s.get);
-  const setUser = userStore((s) => s.setUser);
+  const { user, setUser } = userStore();
+  const [loading, setLoading] = useState(!user);
 
-  const query = useQuery({
-    queryKey: ["gatewayUser"],
-    queryFn: async (): Promise<User | null> => {
-      const response = await fetch(`${API_BASE}/auth/user`, {
-        method: "GET",
-        credentials: "include",
+  useEffect(() => {
+    if (user) return;
+    fetch(`${GATEWAY_BASE}/appA/api/user/me`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setUser(toAppUser(data));
+        setLoading(false);
+      })
+      .catch(() => {
+        console.log("error");
+        window.location.assign(LOGIN_URL);
+        setLoading(false);
       });
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const gatewayUser = (await response.json()) as GatewayUser;
-      return toAppUser(gatewayUser);
-    },
-    retry: false,
-    staleTime: 15_000,
-  });
-
-  if (query.isSuccess) {
-    const currentUser = get(user);
-    const nextUser = query.data;
-
-    if (
-      currentUser?.role !== nextUser?.role ||
-      currentUser?.isFirstLogin !== nextUser?.isFirstLogin ||
-      currentUser?.uuid !== nextUser?.uuid
-    ) {
-      setUser(nextUser);
-    }
-  }
-
-  if (query.isLoading) {
-    return null;
-  }
-
-  const parsedUser = get(user);
-  if (!parsedUser) {
-    window.location.assign(LOGIN_URL);
-    return null;
-  }
+  }, [setUser]);
+  if (loading) return null;
 
   return <Outlet />;
 }

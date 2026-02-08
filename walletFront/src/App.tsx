@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Home } from "./public/home";
 import { AuthRoute } from "./route/AuthRoute";
+import { GATEWAY_BASE } from "./config/urls";
 
 const routes = [
   {
@@ -18,13 +19,10 @@ const routes = [
 ];
 function App() {
   useEffect(() => {
-    fetch(
-      `${import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082"}/auth/csrf`,
-      {
-        credentials: "include",
-        method: "GET",
-      },
-    )
+    fetch(`${GATEWAY_BASE}/auth/csrf`, {
+      credentials: "include",
+      method: "GET",
+    })
       .then(() => console.log("Handshake CSRF réussi"))
       .catch((err) => console.error("Échec handshake", err));
   }, []);

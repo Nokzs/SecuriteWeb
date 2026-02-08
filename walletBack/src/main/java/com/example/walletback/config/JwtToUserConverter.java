@@ -27,24 +27,41 @@ public class JwtToUserConverter implements Converter<Jwt, AbstractAuthentication
     @Override
     @Transactional
     public AbstractAuthenticationToken convert(Jwt jwt) {
-        String subject = jwt.getSubject();
+        System.out.println("🔍 [DEBUG APP B] Début conversion JWT. Subject: " + jwt.getSubject());
 
-        UUID ssoID = UUID.fromString(subject);
+        try {
+            String subject = jwt.getSubject();
+            String email = jwt.getClaimAsString("email");
+            String role = jwt.getClaimAsString("role");
 
-        String email = jwt.getClaimAsString("email");
-        String role = jwt.getClaimAsString("role");
+            UUID ssoID;
+            try {
+                ssoID = UUID.fromString(subject);
+            } catch (IllegalArgumentException e) {
+                System.err.println("❌ [DEBUG APP B] Le subject '" + subject + "' n'est pas un UUID !");
+                throw e;
+            }
 
-        userRepository.findBySsoId(ssoID).orElseGet(() -> {
-            User newUser = User.builder()
-                    .ssoId(ssoID)
-                    .email(email)
-                    .role(role)
-                    .balance(BigDecimal.ZERO)
-                    .currency("EUR")
-                    .build();
-            return userRepository.save(newUser);
-        });
+            User user = userRepository.findBySsoId(ssoID)
+                    .orElseGet(() -> userRepository.findByEmail(email)
+                            .orElseGet(() -> {
+                                System.out.println("🆕 [DEBUG APP B] Création user: " + email);
+                                return userRepository.save(User.builder()
+                                        .ssoId(ssoID)
+                                        .email(email)
+                                        .role(role)
+                                        .balance(BigDecimal.ZERO)
+                                        .currency("EUR")
+                                        .build());
+                            }));
 
-        return new JwtAuthenticationToken(jwt, authoritiesConverter.convert(jwt), subject);
+            System.out.println("✅ [DEBUG APP B] Authentification réussie pour: " + email);
+            return new JwtAuthenticationToken(jwt, authoritiesConverter.convert(jwt), subject);
+
+        } catch (Exception e) {
+            System.err.println("💥 [DEBUG APP B] Erreur fatale convertisseur: " + e.getMessage());
+            e.printStackTrace();
+            return null; // Spring Security traitera cela comme une erreur d'auth
+        }
     }
 }

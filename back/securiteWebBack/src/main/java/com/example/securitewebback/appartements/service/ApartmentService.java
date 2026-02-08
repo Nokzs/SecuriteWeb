@@ -130,7 +130,6 @@ public class ApartmentService {
 
         handlePhotoUpdate(apartment, dto.photoFilename(), dto.deletePhoto());
 
-        // Champs de base
         apartment.setNumero(dto.numero());
         apartment.setSurface(dto.surface());
         apartment.setNombrePieces(dto.nombrePieces());

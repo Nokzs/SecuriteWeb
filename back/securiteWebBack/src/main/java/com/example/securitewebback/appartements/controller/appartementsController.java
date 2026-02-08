@@ -47,8 +47,7 @@ public class appartementsController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int limit,
             @RequestParam(required = false) String search,
-            @PathVariable("buildingId") UUID buildingId
-            ) {
+            @PathVariable("buildingId") UUID buildingId) {
 
         Pageable pageable = PageRequest.of(page, limit);
         ApartementAndBuildingDto buildingPage = apartmentService.getApartmentsBySyndicId(buildingId, pageable, search);
@@ -58,8 +57,7 @@ public class appartementsController {
 
     @PreAuthorize("@apartmentSecurity.canAccessToBuilding(#createAppartementDto.buildingId)")
     @PostMapping
-    public ResponseEntity<ApartementDto> createApartement(@RequestBody CreateAppartementDto createAppartementDto
-            ) {
+    public ResponseEntity<ApartementDto> createApartement(@RequestBody CreateAppartementDto createAppartementDto) {
 
         Apartment createdApartment = apartmentService.createApartment(createAppartementDto);
         String signedLink = null;
@@ -81,6 +79,7 @@ public class appartementsController {
         return ResponseEntity.ok(dto);
     }
 
+    @PreAuthorize("@apartmentSecurity.canAccessToBuilding(#createAppartementDto.buildingId)")
     @PutMapping("/{id}")
     public ResponseEntity<ApartementDto> updateApartment(
             @PathVariable UUID id,
@@ -103,6 +102,7 @@ public class appartementsController {
         return ResponseEntity.ok(ApartementDto.fromEntity(apartment, uploadUrl));
     }
 
+    @PreAuthorize("HasRole('PROPRIETAIRE')")
     @GetMapping
     public ResponseEntity<Page<ApartementDto>> getOwnerProperties(
             Authentication authentication,

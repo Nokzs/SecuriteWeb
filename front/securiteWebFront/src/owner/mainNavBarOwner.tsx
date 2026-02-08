@@ -32,7 +32,7 @@ export const MainNavBarOwner = () => {
           }
         >
           <AlertCircle size={18} />
-          Mes demande de payements
+          Mes Signalements{" "}
         </NavLink>
         <NavLink
           to="/owner/invoices"
@@ -45,7 +45,7 @@ export const MainNavBarOwner = () => {
           }
         >
           <Receipt size={18} />
-          Mes Signalements
+          Mes demande de payements
         </NavLink>
       </div>
     </NavBar>

@@ -34,6 +34,9 @@ import org.springframework.web.server.WebFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.web.server.csrf.CsrfToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
@@ -43,6 +46,8 @@ public class SecurityConfig {
 
     @Autowired
     private LogoutProperties appProps;
+
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
     /**
      * Force CSRF token generation/storage for /auth/csrf even if token does not yet
@@ -66,8 +71,6 @@ public class SecurityConfig {
         };
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
-
     @Bean
     public WebFilter subscribeToCsrfTokenWebFilter() {
         return (exchange, chain) -> {
@@ -87,6 +90,8 @@ public class SecurityConfig {
         csrfTokenRepository.setCookiePath("/");
 
         return http
+
+                .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
                         .csrfTokenRequestHandler(new ServerCsrfTokenRequestAttributeHandler())
@@ -104,7 +109,6 @@ public class SecurityConfig {
                                             "/" + env.getProperty("APPA_PATH_PREFIX", "appA") + "/api/auth/register"))
                                     .matches(exchange);
                         }))
-                .cors(Customizer.withDefaults())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(new HttpStatusServerEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeExchange(ex -> ex
@@ -210,6 +214,7 @@ public class SecurityConfig {
 
         String rawAllowedOrigins = env.getProperty("app.cors.allowed-origins",
                 "http://localhost:3000,http://localhost:3001");
+        logger.info("Configuring CORS allowed origins: {}", rawAllowedOrigins);
         List<String> allowedOrigins = Arrays.stream(rawAllowedOrigins.split(","))
                 .map(String::trim)
                 .filter(origin -> !origin.isBlank())
@@ -239,7 +244,7 @@ public class SecurityConfig {
                         appTag = exchange.getExchange().getRequest().getQueryParams().getFirst(appProps.getParam());
                     }
 
-                    String targetUrl = resolveTargetUrl(appTag); 
+                    String targetUrl = resolveTargetUrl(appTag);
 
                     logger.info("Logout triggered. App: {}, Target URL: {}", appTag, targetUrl);
 

@@ -20,7 +20,7 @@ public class OperationService {
     OperationRepository operationRepository;
 
     public Page<Operation> getOperations(UUID ssoId, Pageable pageable) {
-        return this.operationRepository.findByOrigin_SsoId(ssoId, pageable);
+        return this.operationRepository.findAllByUserId(ssoId, pageable);
     }
 
     public void saveOperation(String label, User receiver, User origin, BigDecimal amount, OperationSign sign) {

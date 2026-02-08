@@ -6,7 +6,9 @@ import { z } from "zod";
 
 const incidentFormSchema = z.object({
   title: z.string().min(5, "Le titre doit contenir au moins 5 caractères"),
-  description: z.string().min(20, "La description doit contenir au moins 20 caractères"),
+  description: z
+    .string()
+    .min(20, "La description doit contenir au moins 20 caractères"),
   isUrgent: z.boolean().optional().default(false),
 });
 
@@ -50,7 +52,10 @@ export function IncidentFormModal({
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setPhotoPreviewUrls((prev) => [...prev, event.target?.result as string]);
+        setPhotoPreviewUrls((prev) => [
+          ...prev,
+          event.target?.result as string,
+        ]);
       };
       reader.readAsDataURL(file);
     });
@@ -82,12 +87,15 @@ export function IncidentFormModal({
 
   if (success) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/40 bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg p-8 max-w-md w-full text-center">
           <div className="text-green-600 text-5xl mb-4">✓</div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">Incident signalé!</h3>
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">
+            Incident signalé!
+          </h3>
           <p className="text-gray-600">
-            Votre incident pour <strong>{propertyName}</strong> a été enregistré avec succès.
+            Votre incident pour <strong>{propertyName}</strong> a été enregistré
+            avec succès.
           </p>
         </div>
       </div>
@@ -95,11 +103,13 @@ export function IncidentFormModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/40 bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-screen overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Signaler un incident</h2>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Signaler un incident
+            </h2>
             <p className="text-gray-600 text-sm mt-1">{propertyName}</p>
           </div>
           <button
@@ -123,7 +133,9 @@ export function IncidentFormModal({
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
             />
             {errors.title && (
-              <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.title.message}
+              </p>
             )}
           </div>
 
@@ -139,7 +151,9 @@ export function IncidentFormModal({
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 resize-none"
             />
             {errors.description && (
-              <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.description.message}
+              </p>
             )}
           </div>
 
@@ -200,7 +214,9 @@ export function IncidentFormModal({
               className="w-4 h-4 cursor-pointer"
             />
             <label htmlFor="isUrgent" className="flex-1 cursor-pointer">
-              <span className="font-semibold text-yellow-900">Marquer comme urgent</span>
+              <span className="font-semibold text-yellow-900">
+                Marquer comme urgent
+              </span>
               <p className="text-sm text-yellow-800">
                 Signalez si ce problème nécessite une intervention rapide
               </p>

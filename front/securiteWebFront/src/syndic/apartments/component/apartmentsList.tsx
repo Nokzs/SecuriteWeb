@@ -26,6 +26,7 @@ export interface Apartment {
   photoFilename: string | null;
   tantiemes: number;
   ownerId?: string;
+  ownerEmail: string;
   buildingUuid: string;
 }
 

@@ -13,7 +13,6 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-
 @Component
 public class JwtToUserConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
@@ -35,7 +34,7 @@ public class JwtToUserConverter implements Converter<Jwt, AbstractAuthentication
             throw new UsernameNotFoundException("Invalid sub claim (expected UUID): " + userUuid, ex);
         }
 
-        CustomUserDetails userDetails = new CustomUserDetails(user);
+        CustomUserDetails userDetails = new CustomUserDetails(user, jwt.getTokenValue());
 
         return new UsernamePasswordAuthenticationToken(
                 userDetails,

@@ -41,7 +41,6 @@ export const useSecureFetch = () => {
         return await doFetch();
       } catch (error) {
         userStore.getState().clearUser();
-        window.location.assign("/login");
         throw error;
       }
     },

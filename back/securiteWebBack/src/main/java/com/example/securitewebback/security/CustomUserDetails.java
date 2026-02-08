@@ -13,9 +13,11 @@ import com.example.securitewebback.auth.entity.User;
 public class CustomUserDetails implements UserDetails {
 
     private final User user;
+    private final String token;
 
-    public CustomUserDetails(User user) {
+    public CustomUserDetails(User user, String token) {
         this.user = user;
+        this.token = token;
     }
 
     public UUID getUuid() {
@@ -33,6 +35,10 @@ public class CustomUserDetails implements UserDetails {
 
     public String getRole() {
         return user.getRole().name();
+    }
+
+    public String getToken() {
+        return this.token;
     }
 
     @Override

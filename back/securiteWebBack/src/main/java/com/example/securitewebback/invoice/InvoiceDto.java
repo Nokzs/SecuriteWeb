@@ -1,12 +1,14 @@
 package com.example.securitewebback.invoice;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import com.example.securitewebback.building.dto.BuildingDto;
 
 public record InvoiceDto(
-                                String label,
-                                BigDecimal amount,
-                                BuildingDto buildingId,
-                                String statut, String createdAt) {
+                                                                UUID id,
+                                                                String label,
+                                                                BigDecimal amount,
+                                                                BuildingDto buildingId,
+                                                                String statut, String createdAt) {
 }

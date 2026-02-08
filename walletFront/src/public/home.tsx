@@ -1,4 +1,4 @@
-import { Wallet, ArrowUpRight, ArrowDownLeft, Plus } from "lucide-react";
+import { Wallet, Plus } from "lucide-react";
 import { useState } from "react";
 import { AddMoneyModal } from "../component/AddMoneyModal";
 import { LogoutButton } from "../component/logoutButton";
@@ -31,7 +31,7 @@ export const Home = () => {
   const [filter, setFilter] = useState<{
     page: number;
     limit: number;
-  }>({ page: 0, limit: 10 });
+  }>({ page: 0, limit: 5 });
   const userData = useQuery<user | null>({
     queryKey: ["user", user],
     queryFn: async () => {

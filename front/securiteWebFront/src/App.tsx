@@ -16,7 +16,9 @@ import { SyndicMessages } from "./syndic/messages/syndicMessages";
 import { MainLayoutOwnerDashboard } from "./owner/dashboard/mainLayoutOwner";
 import { SyndicReclamations } from "./syndic/reclamations/syndicReclamations";
 import { OwnerProperties } from "./owner/ownerProperties";
-
+import ExpenseList from "./syndic/expense/expenseList";
+import { GATEWAY_BASE } from "./config/urls";
+import PaymentRequestList from "./owner/invoice/InvoiceList";
 const routes = [
   {
     id: "public",
@@ -54,12 +56,8 @@ const routes = [
                     element: <ApartmentList />,
                   },
                   {
-                    path: "residents",
-                    element: <>Residents Syndic</>,
-                  },
-                  {
                     path: "expenses",
-                    element: <>Expenses Syndic</>,
+                    element: <ExpenseList />,
                   },
                 ],
               },
@@ -112,7 +110,7 @@ const routes = [
                 element: <OwnerProperties />, // Le contenu (Grille + Modale)
               },
               // { path: "incidents", element: <OwnerIncidents /> }
-              { path: "invoices", element: <>Owner Invoices</> },
+              { path: "invoices", element: <PaymentRequestList /> },
             ],
           },
         ],
@@ -122,13 +120,10 @@ const routes = [
 ];
 function App() {
   useEffect(() => {
-    fetch(
-      `${import.meta.env.VITE_GATEWAY_BASE ?? "http://localhost:8082"}/auth/csrf`,
-      {
-        credentials: "include",
-        method: "GET",
-      },
-    )
+    fetch(`${GATEWAY_BASE}/auth/csrf`, {
+      credentials: "include",
+      method: "GET",
+    })
       .then(() => console.log("Handshake CSRF réussi"))
       .catch((err) => console.error("Échec handshake", err));
   }, []);

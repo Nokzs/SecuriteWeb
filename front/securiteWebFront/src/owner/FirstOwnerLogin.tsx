@@ -30,7 +30,7 @@ export function FirstOwnerLogin() {
   const user = userStore((s) => s.user);
   const get = userStore((s) => s.get);
   const parsedUser = user ? get(user) : null;
-
+  const clearUser = userStore((s) => s.clearUser);
   const secureFetch = useSecureFetch();
   const navigate = useNavigate();
 
@@ -68,7 +68,7 @@ export function FirstOwnerLogin() {
 
   const onSubmit = async (data: ChangePasswordFormValues) => {
     await mutateAsync(data);
-
+    clearUser();
     navigate("/owner", { replace: true });
   };
 

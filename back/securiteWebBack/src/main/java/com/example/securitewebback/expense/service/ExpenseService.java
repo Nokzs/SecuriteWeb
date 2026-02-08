@@ -9,26 +9,22 @@ import org.springframework.stereotype.Service;
 import com.example.securitewebback.building.repository.BuildingRepository;
 import com.example.securitewebback.expense.dto.CreateExpenseDto;
 import com.example.securitewebback.expense.entity.Expense;
-import com.example.securitewebback.expense.expenseEnum.ExpenseStatut;
 import com.example.securitewebback.expense.repository.ExpenseRepository;
 import com.example.securitewebback.user.repository.SyndicRepository;
 import com.example.securitewebback.building.entity.Building;
 import com.example.securitewebback.auth.entity.Syndic;
-import com.example.securitewebback.invoice.entity.Invoice;
-import com.example.securitewebback.invoice.invoiceEnum.InvoiceStatut;
+import com.example.securitewebback.invoice.RefundInfo;
+import com.example.securitewebback.invoice.service.InvoicesService;
 import com.example.securitewebback.payement.PaymentService;
 
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
+import org.springframework.beans.factory.annotation.Value;
 import java.util.List;
-import java.util.Map;
 
 @Service
+@Slf4j
 public class ExpenseService {
     private final ExpenseRepository expenseRepository;
     private final BuildingRepository buildingRepository;
@@ -36,13 +32,16 @@ public class ExpenseService {
     @Value("${app.paiement.url}")
     private String paiementAppUrl;
     private final PaymentService paymentService;
+    private final InvoicesService invoicesService;
 
     public ExpenseService(ExpenseRepository expenseRepository, BuildingRepository buildingRepository,
-            SyndicRepository syndicRepository, PaymentService paymentService, PaymentService paymentService2) {
+            SyndicRepository syndicRepository, PaymentService paymentService, PaymentService paymentService2,
+            InvoicesService invoicesService) {
         this.expenseRepository = expenseRepository;
         this.buildingRepository = buildingRepository;
         this.syndicRepository = syndicRepository;
         this.paymentService = paymentService2;
+        this.invoicesService = invoicesService;
     }
 
     public Page<Expense> getExpensesByBuildingId(String buildingId, Pageable pageable) {
@@ -64,18 +63,22 @@ public class ExpenseService {
     }
 
     @Transactional
-    public void cancelExpense(UUID expenseId) {
-        Expense expense = expenseRepository.findById(expenseId)
-                .orElseThrow(() -> new RuntimeException("Expense not found"));
-        List<Invoice> invoices = expense.getInvoices();
-        for (Invoice invoice : invoices) {
-            if (invoice.getStatut() == InvoiceStatut.PAID) {
-                this.paymentService.transfertRequest(invoice.getDestinataire().getId(),
-                        invoice.getAmount().doubleValue());
-            }
-            invoice.setStatut(InvoiceStatut.CANCELLED);
-        }
-        expense.setStatut(ExpenseStatut.CANCELLED);
-    }
+    public void cancelExpense(UUID expenseId, String token) {
+        List<RefundInfo> refunds = this.invoicesService.getRefundInfos(expenseId);
 
+        for (RefundInfo refund : refunds) {
+            try {
+                this.paymentService.transfertRequest(
+                        refund.email(),
+                        refund.amount(),
+                        "Remboursement pour annulation de dépense",
+                        token);
+            } catch (Exception e) {
+                log.error("ERREUR CRITIQUE : Impossible de rembourser {} pour la facture {}",
+                        refund.email(), refund.invoiceId());
+            }
+        }
+
+        invoicesService.finalizeCancellation(expenseId);
+    }
 }

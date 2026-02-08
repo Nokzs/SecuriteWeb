@@ -28,18 +28,17 @@ export const AddApartmentPopUp = ({
       ? apartmentToEdit.photoFilename
       : null,
   );
+  console.log(apartmentToEdit);
   const [deletePhoto, setDeletePhoto] = useState(false);
   const [newApartment, setNewApartment] = useState<
-    Omit<Apartment, "buildingUuid" | "id" | "ownerId" | "photoFilename"> & {
-      ownerEmail?: string;
-    }
+    Omit<Apartment, "buildingUuid" | "id" | "ownerId" | "photoFilename">
   >({
     numero: apartmentToEdit?.numero ?? "",
     etage: apartmentToEdit?.etage,
     nombrePieces: apartmentToEdit?.nombrePieces,
     tantiemes: apartmentToEdit?.tantiemes ?? 0,
     surface: apartmentToEdit?.surface,
-    ownerEmail: "",
+    ownerEmail: apartmentToEdit?.ownerEmail ?? "",
   });
 
   const user = userStore((s) => s.user);
@@ -96,7 +95,9 @@ export const AddApartmentPopUp = ({
           tantiemes: formData.tantiemes,
           deletePhoto: deletePhoto,
           photoFilename: selectedFile ? selectedFile.name : null,
+          ownerEmail: formData.ownerEmail,
         };
+        console.log("Données envoyées pour modification :", data);
         const response = await secureFetch(
           `${API_BASE}/apartment/${apartmentToEdit.id}`,
           {

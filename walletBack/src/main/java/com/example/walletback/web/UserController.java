@@ -10,6 +10,8 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,9 +29,7 @@ import jakarta.persistence.EntityNotFoundException;
 import com.example.walletback.dto.AddMoneyRequest;
 import com.example.walletback.dto.TransfertMoneyRequest;
 import com.example.walletback.dto.UserDto;
-import org.springframework.security.access.prepost.PreAuthorize;
-import com.example.walletback.dto.UserDto;
-import com.example.walletback.entities.User;
+
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
@@ -51,7 +51,7 @@ public class UserController {
         return UserDto.fromEntity(user);
     }
 
-    //@PreAuthorize("hasRole('PROPRIETAIRE')")
+    // @PreAuthorize("hasRole('PROPRIETAIRE')")
     @PostMapping("/addMoney")
     public ResponseEntity<?> addMoney(@RequestBody AddMoneyRequest request, Authentication authentication) {
         UUID ssoId = UUID.fromString(authentication.getName());
@@ -65,11 +65,15 @@ public class UserController {
 
     @PostMapping("/transfer")
     public ResponseEntity<?> transfer(@RequestBody TransfertMoneyRequest request, Authentication auth) {
+        Logger logger = LoggerFactory.getLogger(UserController.class);
+        logger.info("je suis dans le controller de transfert d'argent");
         Jwt jwt = (Jwt) auth.getPrincipal();
         String tokenValue = jwt.getTokenValue();
 
         UUID ssoId = UUID.fromString(auth.getName());
+        logger.info("je suis dans le controller de transfert d'argent avec ssoId : {}", ssoId);
         userService.transferMoney(ssoId, request, tokenValue);
-    
+
         return ResponseEntity.ok().build();
-    }}
+    }
+}

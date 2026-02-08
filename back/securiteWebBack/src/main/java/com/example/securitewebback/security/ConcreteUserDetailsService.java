@@ -22,6 +22,6 @@ public class ConcreteUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé"));
 
-        return new CustomUserDetails(user);
+        return new CustomUserDetails(user, "");
     }
 }

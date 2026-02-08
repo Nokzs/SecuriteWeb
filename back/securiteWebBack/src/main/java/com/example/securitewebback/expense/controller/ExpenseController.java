@@ -22,8 +22,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.securitewebback.security.CustomUserDetails;
 
 @RestController
 @RequestMapping("/api/expense")
@@ -49,8 +53,10 @@ public class ExpenseController {
                 expense -> {
                     int numberPaid = (int) expense.getInvoices().stream()
                             .filter(invoice -> invoice.getStatut() == InvoiceStatut.PAID).count();
-                    return new ExpenseDto(expense.getLabel(), expense.getTotalAmount(), expense.getCreatedAt(),
-                            expense.getInvoices().size(), numberPaid);
+                    return new ExpenseDto(expense.getId().toString(), expense.getLabel(), expense.getTotalAmount(),
+                            expense.getStatut().toString(),
+                            expense.getCreatedAt(),
+                            numberPaid, expense.getInvoices().size());
                 });
     }
 
@@ -65,9 +71,12 @@ public class ExpenseController {
 
     @PreAuthorize("hasRole('SYNDIC')")
     @PutMapping("/{expenseId}")
-    @Transactional
-    public void cancelExpense(@PathVariable UUID expenseId) {
-        this.expenseService.cancelExpense(expenseId);
+    public void cancelExpense(@PathVariable UUID expenseId, Authentication authentication) {
+
+        CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
+
+        String tokenValue = user.getToken();
+        this.expenseService.cancelExpense(expenseId, tokenValue);
     }
 
 }

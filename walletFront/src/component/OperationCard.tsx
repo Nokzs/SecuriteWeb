@@ -1,13 +1,12 @@
-import React from "react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ArrowUpRight, ArrowDownLeft, PlusCircle } from "lucide-react";
 import type { Operation } from "../public/home";
 export const OperationCard = ({ operation }: { operation: Operation }) => {
-  const isPositive = operation.sign === "+";
+  const isPositive = operation.sign === "PLUS";
   const isSelfTransfer =
     !operation.receiverMail || operation.receiverMail === operation.mail;
-
+  console.log(operation);
   const relativeDate = operation.date
     ? formatDistanceToNow(new Date(operation.date), {
         addSuffix: true,
@@ -54,7 +53,7 @@ export const OperationCard = ({ operation }: { operation: Operation }) => {
             isPositive ? "text-emerald-600" : "text-rose-600"
           }`}
         >
-          {operation.sign === "plus" ? "+" : "-"}
+          {operation.sign === "PLUS" ? "+" : "-"}
           {operation.amount.toLocaleString("fr-FR", {
             minimumFractionDigits: 2,
           })}

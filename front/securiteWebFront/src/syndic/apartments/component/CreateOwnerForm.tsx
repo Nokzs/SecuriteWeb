@@ -116,23 +116,48 @@ export const CreateOwnerForm = ({
           </div>
 
           <div className="relative group">
-            <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 flex items-center justify-between">
-              <code className="text-2xl font-mono font-bold text-indigo-600 tracking-widest">
-                {credentials.email}
-              </code>
-              <code className="text-2xl font-mono font-bold text-indigo-600 tracking-widest">
-                {credentials.password}
-              </code>
-              <button
-                onClick={() =>
-                  navigator.clipboard.writeText(credentials.password)
-                }
-                className="p-2 hover:bg-indigo-100 rounded-lg text-indigo-400 transition-colors"
-                title="Copier"
-              >
-                <Copy size={20} />
-              </button>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-slate-400 uppercase mb-1">
+                    Email
+                  </span>
+                  <code className="text-xl font-mono font-bold text-indigo-600 tracking-tight">
+                    {credentials.email}
+                  </code>
+                </div>
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(credentials.email)
+                  }
+                  className="p-2 hover:bg-indigo-100 rounded-lg text-indigo-400 transition-colors"
+                  title="Copier l'email"
+                >
+                  <Copy size={20} />
+                </button>
+              </div>
+
+              {/* Bloc Mot de passe */}
+              <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-slate-400 uppercase mb-1">
+                    Mot de passe
+                  </span>
+                  <code className="text-xl font-mono font-bold text-indigo-600 tracking-widest">
+                    {credentials.password}
+                  </code>
+                </div>
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(credentials.password)
+                  }
+                  className="p-2 hover:bg-indigo-100 rounded-lg text-indigo-400 transition-colors"
+                  title="Copier le mot de passe"
+                >
+                  <Copy size={20} />
+                </button>
+              </div>
+            </div>{" "}
           </div>
 
           <button
