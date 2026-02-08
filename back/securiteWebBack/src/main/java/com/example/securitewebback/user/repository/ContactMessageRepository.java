@@ -24,4 +24,6 @@ public interface ContactMessageRepository extends JpaRepository<ContactMessage, 
 
     Optional<ContactMessage> findByIdAndSyndicId(UUID id, UUID syndicId);
 
+    void deleteBySyndicId(UUID syndicId);
+
 }

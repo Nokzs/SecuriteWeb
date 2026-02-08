@@ -4,9 +4,11 @@ import java.util.List;
 
 import com.example.securitewebback.appartements.entity.Apartment;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -19,7 +21,8 @@ public class Proprietaire extends User {
     String nom;
     String prenom;
 
-    @OneToMany
+    @OneToMany(mappedBy = "owner")
+    @JsonIgnore
     List<Apartment> appartements;
 
     public Proprietaire() {

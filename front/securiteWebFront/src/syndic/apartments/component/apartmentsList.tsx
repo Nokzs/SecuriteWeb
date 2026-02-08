@@ -23,6 +23,7 @@ export interface Apartment {
   etage?: number;
   nombrePieces?: number;
   photoFilename: string | null;
+  signedLink?: string | null;
   tantiemes: number;
   ownerId?: string;
   buildingUuid: string;

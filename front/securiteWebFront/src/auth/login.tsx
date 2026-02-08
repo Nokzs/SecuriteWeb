@@ -77,6 +77,10 @@ export const Login = () => {
         navigate("/syndic", { replace: true });
         return;
       }
+      if (parsedUser?.role === "ADMIN") {
+        navigate("/admin", { replace: true });
+        return;
+      }
     }
 
     navigate("/", { replace: true });

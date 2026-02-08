@@ -1,49 +1,65 @@
 import Cookies from "js-cookie";
 import { useCallback } from "react";
+import { useNavigate } from "react-router"; // ou "react-router-dom"
+import { userStore } from "../store/userStore"; // Assure-toi du chemin
 
 export const useSecureFetch = () => {
-  // On type 'options' avec RequestInit pour avoir l'autocomplétion native de fetch
+  const navigate = useNavigate();
+  // On récupère l'action pour nettoyer le token
+  const setToken = userStore((state) => state.setToken);
+
   const secureFetch = useCallback(
     async (url: string, options: RequestInit = {}) => {
-      // Initialisation des headers de manière sécurisée pour TypeScript
+      // 1. Initialisation des headers
       const headers = new Headers(options.headers);
 
-      // On définit le Content-Type par défaut s'il n'existe pas déjà
       if (!headers.has("Content-Type")) {
         headers.set("Content-Type", "application/json");
       }
 
-      const defaultOptions: RequestInit = {
-        ...options,
-        credentials: "include",
-        headers: headers,
-      };
-
       // 2. Récupération du token CSRF
       const csrfToken = Cookies.get("XSRF-TOKEN");
-      // 3. Ajout du header CSRF pour les méthodes de mutation
+      
       const method = options.method?.toUpperCase() || "GET";
       const isMutation = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
 
       if (isMutation && csrfToken) {
-        // Utiliser l'objet Headers est plus propre que de manipuler un objet litéral
-        (defaultOptions.headers as Headers).set("X-XSRF-TOKEN", csrfToken);
+        headers.set("X-XSRF-TOKEN", csrfToken);
       }
+
+      const defaultOptions: RequestInit = {
+        ...options,
+        credentials: "include", // Important pour le JSESSIONID
+        headers: headers,
+      };
 
       try {
         const response = await fetch(url, defaultOptions);
 
-        if (response.status === 403) {
-          console.error("Erreur CSRF ou accès refusé (403)");
+        if (response.status === 401) {
+          console.warn("Session invalide ou compte supprimé. Déconnexion forcée.");
+          
+          // 1. On vide le store (l'utilisateur n'est plus connecté pour React)
+          setToken(null); 
+          
+          // 2. On redirige vers le login immédiatement
+          navigate("/login", { replace: true });
+          
+          // 3. On arrête tout ici (on ne renvoie même pas la réponse pour éviter les erreurs de parsing)
+          return response; 
         }
+
+        // Gestion optionnelle du 403 (Accès interdit mais connecté)
+        if (response.status === 403) {
+          alert("Vous n'avez pas les droits pour effectuer cette action.");}
 
         return response;
       } catch (error) {
-        console.error("Erreur réseau :", error);
+        console.error("Erreur réseau critique :", error);
         throw error;
       }
     },
-    [],
+    [navigate, setToken]
   );
 
   return secureFetch;

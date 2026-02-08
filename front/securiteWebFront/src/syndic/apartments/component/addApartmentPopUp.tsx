@@ -29,16 +29,19 @@ export const AddApartmentPopUp = ({
       : null,
   );
   const [deletePhoto, setDeletePhoto] = useState(false);
+
+  // Initialisation des valeurs par défaut pour éviter le "undefined"
+  // On utilise des valeurs vides ou 0 au lieu de laisser undefined
   const [newApartment, setNewApartment] = useState<
     Omit<Apartment, "buildingUuid" | "id" | "ownerId" | "photoFilename"> & {
       ownerEmail?: string;
     }
   >({
     numero: apartmentToEdit?.numero ?? "",
-    etage: apartmentToEdit?.etage,
-    nombrePieces: apartmentToEdit?.nombrePieces,
+    etage: apartmentToEdit?.etage ?? 0, // Initialisé à 0
+    nombrePieces: apartmentToEdit?.nombrePieces ?? 1, // Initialisé à 1
     tantiemes: apartmentToEdit?.tantiemes ?? 0,
-    surface: apartmentToEdit?.surface,
+    surface: apartmentToEdit?.surface ?? 0, // Initialisé à 0
     ownerEmail: "",
   });
 
@@ -123,59 +126,41 @@ export const AddApartmentPopUp = ({
       queryClient.invalidateQueries({
         queryKey: ["apartments", parsedUser?.uuid, buildingId],
       });
-      queryClient.invalidateQueries({
-        queryKey: ["apartments", parsedUser?.uuid, buildingId],
-      });
     },
   });
 
   const handleSaveApartment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!buildingId) {
-      alert("Aucun immeuble sélectionné");
-      return;
+  if (!buildingId) return;
+  if (exceedsQuota) return;
+
+  try {
+    // 1. On lance la sauvegarde en BDD
+    const apartment = await saveApartment.mutateAsync({
+      ...newApartment,
+      photoFilename: selectedFile ? selectedFile.name : null,
+    });
+
+    // 2. On vérifie si on a un fichier ET le lien signé du Backend
+    if (selectedFile && apartment.signedLink) {
+      console.log("🚀 Uploading vers MinIO via :", apartment.signedLink);
+      await uploadFile(selectedFile, apartment.signedLink);
     }
 
-    if (exceedsQuota) {
-      alert(
-        `Impossible de sauvegarder l'appartement : tantièmes demandés (${newApartment.tantiemes}) > tantièmes restants (${effectiveRemainingTantiemes}).`,
-      );
-      return;
+    // 3. UNE SEULE FOIS : On ferme et on reset TOUT
+    setShowAddForm(false);
+    setSelectedFile(null);
+    setPreview(null);
+    setDeletePhoto(false);
+
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error("Erreur lors de la sauvegarde :", err.message);
     }
-
-    try {
-      const apartment: Apartment = await saveApartment.mutateAsync({
-        ...newApartment,
-        photoFilename: selectedFile ? selectedFile.name : null,
-      });
-
-      if (selectedFile && apartment.photoFilename) {
-        await uploadFile(selectedFile, apartment.photoFilename);
-      }
-
-      if (deletePhoto) {
-        setDeletePhoto(false);
-      }
-
-      setShowAddForm(false);
-      setSelectedFile(null);
-      setPreview(null);
-      setDeletePhoto(false);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        console.error(
-          "Erreur lors de la sauvegarde de l'appartement :",
-          err.message,
-        );
-      }
-      alert(
-        isEditMode
-          ? "Erreur lors de la modification"
-          : "Erreur lors de l'ajout",
-      );
-    }
-  };
+    alert(isEditMode ? "Erreur lors de la modification" : "Erreur lors de l'ajout");
+  }
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -203,7 +188,7 @@ export const AddApartmentPopUp = ({
             <input
               className="w-full border border-slate-300 text-black p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               placeholder='ex: "A101"'
-              value={newApartment.numero}
+              value={newApartment.numero} // Sera "" si vide, donc contrôlé
               onChange={(e) =>
                 setNewApartment({ ...newApartment, numero: e.target.value })
               }
@@ -219,7 +204,7 @@ export const AddApartmentPopUp = ({
               <input
                 type="number"
                 className="w-full border border-slate-300 text-black p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                value={newApartment.etage}
+                value={newApartment.etage ?? 0}
                 onChange={(e) =>
                   setNewApartment({
                     ...newApartment,
@@ -236,7 +221,7 @@ export const AddApartmentPopUp = ({
               <input
                 type="number"
                 className="w-full border border-slate-300 text-black p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                value={newApartment.surface}
+                value={newApartment.surface ?? 0}
                 onChange={(e) =>
                   setNewApartment({
                     ...newApartment,
@@ -253,7 +238,7 @@ export const AddApartmentPopUp = ({
                 type="number"
                 min={1}
                 className="w-full border border-slate-300 text-black p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                value={newApartment.nombrePieces}
+                value={newApartment.nombrePieces ?? 1}
                 onChange={(e) =>
                   setNewApartment({
                     ...newApartment,
@@ -270,7 +255,8 @@ export const AddApartmentPopUp = ({
               <input
                 type="text"
                 className="w-full border border-slate-300 text-black p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                value={newApartment.ownerEmail}
+                // 🛠️ CORRECTION
+                value={newApartment.ownerEmail ?? ""}
                 disabled
               />
             </div>

@@ -10,7 +10,7 @@ interface Incident {
   ownerLastName: string;
   buildingName: string;
   apartmentNumber: string;
-  status: "PENDING" | "IGNORED" | "VOTED";
+  status: "PENDING" | "IGNORED" | "VOTED" | "IN_PROGRESS" | "RESOLVED";
 }
 
 interface IncidentCardProps {
@@ -28,6 +28,7 @@ export function IncidentCard({
   onVote,
   isSelected,
 }: IncidentCardProps) {
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("fr-FR", {
@@ -36,6 +37,26 @@ export function IncidentCard({
       day: "numeric",
     });
   };
+
+  // 2. Helper pour gérer l'affichage des badges proprement
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return { label: "En attente", style: "bg-yellow-100 text-yellow-800" };
+      case "IGNORED":
+        return { label: "Ignoré", style: "bg-gray-100 text-gray-600" };
+      case "VOTED":
+        return { label: "Vote en cours", style: "bg-blue-100 text-blue-800" };
+      case "IN_PROGRESS":
+        return { label: "Travaux en cours", style: "bg-purple-100 text-purple-800" };
+      case "RESOLVED":
+        return { label: "Terminé / Clos", style: "bg-green-100 text-green-800" };
+      default:
+        return { label: status, style: "bg-gray-100 text-gray-800" };
+    }
+  };
+
+  const statusConfig = getStatusConfig(incident.status);
 
   return (
     <div
@@ -89,28 +110,18 @@ export function IncidentCard({
 
         {/* Status & Actions */}
         <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          {/* Status Badge */}
+          {/* Status Badge Dynamique */}
           <span
-            className={`px-3 py-1 rounded-full text-xs font-semibold ${
-              incident.status === "PENDING"
-                ? "bg-yellow-100 text-yellow-800"
-                : incident.status === "IGNORED"
-                  ? "bg-gray-100 text-gray-800"
-                  : "bg-green-100 text-green-800"
-            }`}
+            className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${statusConfig.style}`}
           >
-            {incident.status === "PENDING"
-              ? "En attente"
-              : incident.status === "IGNORED"
-                ? "Ignoré"
-                : "Voté"}
+            {statusConfig.label}
           </span>
 
           <ChevronRight className="text-slate-300" size={20} />
         </div>
       </div>
 
-      {/* Actions - Show on hover or selection */}
+      {/* Actions - Visibles uniquement si sélectionné ET En attente */}
       {isSelected && incident.status === "PENDING" && (
         <div className="mt-4 pt-4 border-t border-indigo-200 flex gap-2">
           <button

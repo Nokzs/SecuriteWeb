@@ -17,6 +17,10 @@ import { SyndicMessages } from "./syndic/messages/syndicMessages";
 import { MainLayoutOwnerDashboard } from "./owner/dashboard/mainLayoutOwner";
 import { SyndicReclamations } from "./syndic/reclamations/syndicReclamations";
 import { OwnerProperties } from "./owner/ownerProperties";
+import { OwnerIncidents } from "./owner/OwnerIncidents";
+import { SyndicVotes } from "./syndic/votes/SyndicVotes";
+import { AdminDashboard } from "./admin/AdminDashboard";
+import { MainLayoutAdmin } from "./admin/dashboard/MainLayoutAdmin";
 
 const routes = [
   {
@@ -85,6 +89,10 @@ const routes = [
                   },
                 ],
               },
+              {
+                path: "votes",
+                element: <SyndicVotes />,
+              }
             ],
           },
         ],
@@ -108,8 +116,25 @@ const routes = [
                 path: "properties",
                 element: <OwnerProperties />, // Le contenu (Grille + Modale)
               },
-              // Tu pourras ajouter d'autres pages ici plus tard (ex: historique)
-              // { path: "incidents", element: <OwnerIncidents /> }
+              {
+                path: "incidents",
+                element: <OwnerIncidents />
+              }
+            ],
+          },
+        ],
+      },
+      {
+        element: <RoleRoute allowedRoles={["ADMIN"]} redirectPath="/" />,
+        children: [
+          {
+            path: "admin",
+            element: <MainLayoutAdmin />, // Le Layout avec la barre latérale Admin
+            children: [
+              {
+                index: true,
+                element: <AdminDashboard />, // Le Dashboard avec les stats
+              },
             ],
           },
         ],

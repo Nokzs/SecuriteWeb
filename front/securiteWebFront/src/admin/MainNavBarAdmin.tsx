@@ -1,13 +1,16 @@
 import { NavLink } from "react-router-dom";
-import { NavBar } from "../component/NavBar"; 
-import { Home, Building2 } from "lucide-react"; // On utilise Building2 au lieu de AlertCircle
+import { NavBar } from "../component/NavBar"; // Assure-toi que le chemin est bon
+import { LayoutDashboard, ShieldAlert } from "lucide-react";
 
-export const MainNavBarOwner = () => {
+export const MainNavBarAdmin = () => {
   return (
     <NavBar>
       <div className="flex flex-col gap-2 flex-1">
+        
+        {/* LIEN 1 : TABLEAU DE BORD */}
         <NavLink
-          to="/owner/properties"
+          to="/admin"
+          end // Important pour ne pas qu'il reste actif sur les sous-routes éventuelles
           className={({ isActive }) =>
             `flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
               isActive
@@ -16,12 +19,16 @@ export const MainNavBarOwner = () => {
             }`
           }
         >
-          <Home size={18} />
-          Mes Logements
+          <LayoutDashboard size={18} />
+          Vue d'ensemble
         </NavLink>
 
+        <div className="mt-4 px-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
+            Sécurité
+        </div>
+        
         <NavLink
-          to="/owner/incidents"
+          to="/admin/logs"
           className={({ isActive }) =>
             `flex items-center gap-2 px-4 py-3 rounded-lg transition-colors ${
               isActive
@@ -30,9 +37,10 @@ export const MainNavBarOwner = () => {
             }`
           }
         >
-          <Building2 size={18} /> {/* Icône Immeuble */}
-          Vie de l'Immeuble
+          <ShieldAlert size={18} />
+          Logs & Audit
         </NavLink>
+
       </div>
     </NavBar>
   );

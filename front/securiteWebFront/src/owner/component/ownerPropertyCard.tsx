@@ -1,12 +1,11 @@
 import { Building2, ChevronRight, MapPin, AlertCircle } from "lucide-react";
 
-// Interface alignée STRICTEMENT avec le Backend (pas de zipcode/city)
+// 1. On ajoute signedLink à l'interface
 interface Property {
   id: string;
   numero: string;
   photoFilename?: string | null;
-  
-  // Champs de l'immeuble existants en base
+  signedLink?: string | null; 
   buildingName: string;
   buildingAddress: string;
 }
@@ -16,16 +15,9 @@ interface OwnerPropertyCardProps {
   onIncidentClick: () => void;
 }
 
-const API_URL = import.meta.env.VITE_APIURL;
-
 export function OwnerPropertyCard({ property, onIncidentClick }: OwnerPropertyCardProps) {
   
-  // Gestion sécurisée de l'image
-  const imageUrl = property.photoFilename
-    ? (property.photoFilename.startsWith("http")
-        ? property.photoFilename
-        : `${API_URL}/files/${property.photoFilename}`)
-    : null;
+  const imageUrl = property.signedLink || null;
 
   return (
     <div className="group bg-white border border-slate-200 p-5 rounded-xl hover:border-indigo-400 hover:shadow-md transition-all overflow-hidden flex flex-col h-full">
@@ -38,6 +30,8 @@ export function OwnerPropertyCard({ property, onIncidentClick }: OwnerPropertyCa
               src={imageUrl} 
               alt={`Appartement ${property.numero}`} 
               className="w-full h-full object-cover rounded-md" 
+              // Petit fix au cas où le lien expire entre temps
+              onError={(e) => (e.currentTarget.style.display = 'none')}
             />
           ) : (
             <Building2 size={28} />
@@ -58,7 +52,6 @@ export function OwnerPropertyCard({ property, onIncidentClick }: OwnerPropertyCa
         <div className="flex items-start gap-2 text-slate-500 text-sm mt-4 mb-6">
           <MapPin size={16} className="mt-0.5 flex-shrink-0" />
           <p className="line-clamp-2">
-            {/* On affiche uniquement l'adresse globale renvoyée par le back */}
             {property.buildingAddress || "Adresse non renseignée"}
           </p>
         </div>

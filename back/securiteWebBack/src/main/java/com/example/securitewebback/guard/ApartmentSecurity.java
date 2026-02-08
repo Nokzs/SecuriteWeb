@@ -1,5 +1,6 @@
 package com.example.securitewebback.guard;
 
+import com.example.securitewebback.auth.entity.Role;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -43,18 +44,26 @@ public class ApartmentSecurity {
 
     public boolean canAccessToBuilding(UUID buildingId, Authentication authentication) {
         CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
-
         Building building = buildingRepository.findById(buildingId).orElse(null);
-        if (building == null)
-            return false;
 
-        if (user.getRole().equals("ROLE_SYNDIC")) {
+        if (building == null) return false;
+
+        System.out.println("User ID: " + user.getUuid());
+        System.out.println("User Role: " + user.getRole());
+        System.out.println("Building Syndic ID: " + building.getSyndic().getId());
+
+        // Vérification propre avec l'Enum (si getRole renvoie un Enum)
+        String userRole = user.getRole();
+        if (userRole.equals("SYNDIC") || userRole.equals("ROLE_SYNDIC")) {
+            // Logique pour le Syndic...
             return building.getSyndic().getId().equals(user.getUuid());
         }
 
-        if (user.getRole().equals("ROLE_PROPRIETAIRE")) {
+        if (userRole.equals("PROPRIETAIRE") || userRole.equals("ROLE_PROPRIETAIRE")) {
+            // Les proprios n'ont pas accès à la vue globale de l'immeuble pour l'instant
             return false;
         }
+
         return false;
     }
 }

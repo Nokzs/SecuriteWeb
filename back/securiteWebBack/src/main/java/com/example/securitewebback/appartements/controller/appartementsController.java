@@ -41,7 +41,7 @@ public class appartementsController {
         this.minioService = minioService;
     }
 
-    @PreAuthorize("@apartmentSecurity.canAccessToBuildingBuilding(#buildingId, authentication)")
+    @PreAuthorize("@apartmentSecurity.canAccessToBuilding(#buildingId, authentication)")
     @GetMapping("/{buildingId}")
     public ResponseEntity<ApartementAndBuildingDto> getApartments(
             @RequestParam(defaultValue = "0") int page,
@@ -51,35 +51,63 @@ public class appartementsController {
             Authentication auth) {
 
         Pageable pageable = PageRequest.of(page, limit);
-        ApartementAndBuildingDto buildingPage = apartmentService.getApartmentsBySyndicId(buildingId, pageable, search);
 
-        return ResponseEntity.ok(buildingPage);
+        // 1. On récupère la page d'appartements brute depuis le service
+        ApartementAndBuildingDto initialData = apartmentService.getApartmentsBySyndicId(buildingId, pageable, search);
+
+        // 2. On transforme CHAQUE appartement pour lui ajouter son lien MinIO signé
+        Page<ApartementDto> mappedApartments = initialData.appartement().map(apt -> {
+            String signedUrl = null;
+            if (apt.photoFilename() != null && !apt.photoFilename().isEmpty()) {
+                try {
+                    // On construit le chemin : "ID_APPART/nom_fichier.jpg"
+                    String objectPath = apt.id().toString() + "/" + apt.photoFilename();
+
+                    // On génère le lien de lecture (GET) pour le bucket de l'immeuble
+                    signedUrl = minioService.presignedDownloadUrl(buildingId.toString(), objectPath);
+                } catch (Exception e) {
+                    System.err.println("Erreur signature image pour appart " + apt.id() + ": " + e.getMessage());
+                }
+            }
+
+            // On recrée le DTO avec le lien signé inclus
+            return new ApartementDto(
+                    apt.id(), apt.numero(), apt.etage(), apt.surface(),
+                    apt.nombrePieces(), apt.tantiemes(), apt.photoFilename(),
+                    signedUrl, // <--- C'est ici que le lien magique arrive au Front !
+                    apt.building()
+            );
+        });
+
+        // 3. On renvoie le DTO global avec les appartements mis à jour
+        return ResponseEntity.ok(new ApartementAndBuildingDto(initialData.building(), mappedApartments));
     }
 
-    @PreAuthorize("@apartmentSecurity.canAccessToBuildingBuilding(#createAppartementDto.buildingId, authentication)")
+    @PreAuthorize("@apartmentSecurity.canAccessToBuilding(#createAppartementDto.buildingId, authentication)")
     @PostMapping
-    public ResponseEntity<ApartementDto> createApartement(@RequestBody CreateAppartementDto createAppartementDto,
-            Authentication auth) {
+    public ResponseEntity<ApartementDto> createApartement(@RequestBody CreateAppartementDto createAppartementDto, Authentication auth) {
 
         Apartment createdApartment = apartmentService.createApartment(createAppartementDto);
         String signedLink = null;
-        if (createdApartment.getPhotoFilename() != null) {
 
-            String objectName = createdApartment.getBuilding().getId().toString() + "/"
-                    + createdApartment.getId().toString()
-                    + "/"
-                    + createdApartment.getPhotoFilename();
+        if (createdApartment.getPhotoFilename() != null) {
+            // 1. On sépare bien le Bucket (Immeuble) et l'Objet (Appart/Fichier)
+            String bucketName = createdApartment.getBuilding().getId().toString();
+            String objectPath = createdApartment.getId().toString() + "/" + createdApartment.getPhotoFilename();
 
             try {
-                signedLink = this.minioService.generatePresignedUrl(objectName);
+                // 2. On utilise la méthode avec les 2 paramètres (Bucket dynamique)
+                signedLink = this.minioService.generatePresignedUploadUrl(bucketName, objectPath);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
+        // 3. On passe le signedLink au DTO
         ApartementDto dto = ApartementDto.fromEntity(createdApartment, signedLink);
         return ResponseEntity.ok(dto);
     }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<ApartementDto> updateApartment(

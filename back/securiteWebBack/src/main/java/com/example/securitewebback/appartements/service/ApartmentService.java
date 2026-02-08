@@ -87,17 +87,28 @@ public class ApartmentService {
 
     public Page<ApartementDto> getApartmentsByOwnerId(UUID ownerId, Pageable pageable) {
         Page<Apartment> apartments = apartmentRepository.findByOwnerId(ownerId, pageable);
+
         return apartments.map(apartment -> {
             String downloadUrl = null;
-            if (apartment.getPhotoFilename() != null) {
+
+            if (apartment.getPhotoFilename() != null && !apartment.getPhotoFilename().isEmpty()) {
                 try {
-                    String objectName = apartment.getBuilding().getId().toString() + "/"
-                            + apartment.getId().toString() + "/" + apartment.getPhotoFilename();
-                    downloadUrl = minioService.presignedDownloadUrl(objectName);
+                    // 1. On définit le bucket (L'immeuble)
+                    String bucketName = apartment.getBuilding().getId().toString();
+
+                    // 2. On définit l'objet (Dossier Appartement / Nom du fichier)
+                    String objectPath = apartment.getId().toString() + "/" + apartment.getPhotoFilename();
+
+                    // 3. On appelle la version à 2 ARGUMENTS (Bucket, Objet)
+                    downloadUrl = minioService.presignedDownloadUrl(bucketName, objectPath);
+
                 } catch (Exception e) {
-                    log.error("Erreur génération lien photo", e);
+                    // Utilise log.error si tu as SLF4J, sinon System.err
+                    System.err.println("Erreur génération lien photo : " + e.getMessage());
                 }
             }
+
+            // Le DTO recevra le lien complet (http://localhost:9000/...) dans signedLink
             return ApartementDto.fromEntity(apartment, downloadUrl);
         });
     }

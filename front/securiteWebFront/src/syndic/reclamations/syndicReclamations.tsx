@@ -20,8 +20,8 @@ interface Incident {
   buildingName: string;
   buildingAddress: string;
   apartmentNumber: string;
-  photoCount: number;
-  status: "PENDING" | "IGNORED" | "VOTED"; // Le back renvoie des MAJUSCULES
+  photoUrls: string[];
+  status: "PENDING" | "IGNORED" | "VOTED";
 }
 
 type SortOption = "urgent" | "recent" | "building" | "owner";
@@ -51,7 +51,7 @@ export function SyndicReclamations() {
     queryFn: async () => {
       // Construction de l'URL avec gestion du filtre "ALL"
       const statusParam = filterStatus === "ALL" ? "" : `&status=${filterStatus}`;
-      
+
       const res = await secureFetch(
         `${API_URL}/incidents?limit=${filter.limit}&page=${filter.page}&sortBy=${sortBy}${statusParam}`
       );
@@ -170,11 +170,10 @@ export function SyndicReclamations() {
                 <button
                   key={option.value}
                   onClick={() => setFilterStatus(option.value)}
-                  className={`px-4 py-2 rounded-lg font-medium transition ${
-                    filterStatus === option.value
+                  className={`px-4 py-2 rounded-lg font-medium transition ${filterStatus === option.value
                       ? "bg-indigo-600 text-white"
                       : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
+                    }`}
                 >
                   {option.label}
                 </button>
@@ -244,13 +243,12 @@ export function SyndicReclamations() {
             {/* Status Badge */}
             <div className="mb-6 flex flex-wrap gap-2">
               <span
-                className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                  selectedIncident.status === "PENDING"
+                className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${selectedIncident.status === "PENDING"
                     ? "bg-yellow-100 text-yellow-800"
                     : selectedIncident.status === "IGNORED"
                       ? "bg-gray-100 text-gray-800"
                       : "bg-green-100 text-green-800"
-                }`}
+                  }`}
               >
                 {selectedIncident.status === "PENDING"
                   ? "En attente"
@@ -310,18 +308,28 @@ export function SyndicReclamations() {
                   Description
                 </p>
                 <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-                    <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
+                  <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
                     {selectedIncident.description}
-                    </p>
+                  </p>
                 </div>
               </div>
 
-              {selectedIncident.photoCount > 0 && (
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-blue-700 flex items-center gap-2">
-                  <span>📷</span>
-                  <span className="text-sm font-medium">
-                     {selectedIncident.photoCount} photo(s) jointe(s)
-                  </span>
+              {selectedIncident.photoUrls && selectedIncident.photoUrls.length > 0 && (
+                <div className="mt-6">
+                  <p className="text-xs text-slate-500 uppercase font-semibold mb-3">
+                    Photos du sinistre ({selectedIncident.photoUrls.length})
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedIncident.photoUrls.map((url, idx) => (
+                      <a href={url} target="_blank" rel="noreferrer" key={idx}>
+                        <img
+                          src={url}
+                          alt="Incident"
+                          className="w-full h-24 object-cover rounded-lg border border-slate-200 hover:border-indigo-500 transition-all cursor-zoom-in"
+                        />
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
