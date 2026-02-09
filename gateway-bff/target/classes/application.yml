@@ -1,6 +1,6 @@
 server:
   port: ${GATEWAY_PORT:8082}
-
+  forward-headers-strategy: framework
 app:
   param: ${APP_PARAM_NAME:app}
   cors:
@@ -42,22 +42,26 @@ spring:
             scope: ${OAUTH2_SCOPES:openid,profile,email,offline_access}
         provider:
           monolith:
-            issuer-uri: ${OAUTH2_ISSUER_URI:http://auth.local:8080}
-
+            #adresse ou je peux y acceder du navigateur
+            authorization-uri: http.hotel.internal:10/oauth2/authorize
+            token-uri: http://back.home.arpa/oauth2/token
+            jwk-set-uri: http://back.home.arpa/oauth2/jwks
+            user-info-uri: http://back.home.arpa/userinfo
   cloud:
     gateway:
       server:
         webflux:
           routes:
+            #adresse du back interne
             - id: appa-api
-              uri: ${APPA_BASE_URI:${MONOLITH_BASE_URI:http://backend:8080}}
+              uri: ${APPA_BASE_URI:${MONOLITH_BASE_URI:http://back.home.arpa:8080}}
               predicates:
                 - Path=/${APPA_PATH_PREFIX:appA}/api/**
               filters:
                 - TokenRelay
                 - RewritePath=/${APPA_PATH_PREFIX:appA}/api/(?<segment>.*), /api/${segment}
             - id: appb-api
-              uri: ${APPB_BASE_URI:${MONOLITH_BASE_URIB:http://backendb:8080}}
+              uri: ${APPB_BASE_URI:${MONOLITH_BASE_URIB:http://backb.home.arpa:8080}}
               predicates:
                 - Path=/${APPB_PATH_PREFIX:appB}/api/**
               filters:

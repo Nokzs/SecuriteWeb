@@ -51,18 +51,14 @@ public class appartementsController {
 
         Pageable pageable = PageRequest.of(page, limit);
 
-        // 1. On récupère la page d'appartements brute depuis le service
         ApartementAndBuildingDto initialData = apartmentService.getApartmentsBySyndicId(buildingId, pageable, search);
 
-        // 2. On transforme CHAQUE appartement pour lui ajouter son lien MinIO signé
         Page<ApartementDto> mappedApartments = initialData.appartement().map(apt -> {
             String signedUrl = null;
             if (apt.photoFilename() != null && !apt.photoFilename().isEmpty()) {
                 try {
-                    // On construit le chemin : "ID_APPART/nom_fichier.jpg"
                     String objectPath = apt.id().toString() + "/" + apt.photoFilename();
 
-                    // On génère le lien de lecture (GET) pour le bucket de l'immeuble
                     signedUrl = minioService.presignedDownloadUrl(buildingId.toString(), objectPath);
                 } catch (Exception e) {
                     System.err.println("Erreur signature image pour appart " + apt.id() + ": " + e.getMessage());
